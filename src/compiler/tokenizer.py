@@ -9,7 +9,7 @@ def tokenize(source_code: str) -> list[Token]:
         'operator': re.compile(r'([=!<>]=|[=*/<>+-])'),
         'punctuation': re.compile(r'[(){},;]'),
     }
-    ws = re.compile(r'\s') # whitespace
+    ws = re.compile(r'(\s|(#|//).*)') # whitespace and comments
     
     res = []
     pos = 0
