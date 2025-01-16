@@ -11,7 +11,7 @@ class Location:
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Location):
             return NotImplemented
-        if self.placeholder:
+        if self.placeholder or value.placeholder:
             return True
         return (self.file == value.file) and (self.line == value.line) and (self.column == value.column) 
 
@@ -19,4 +19,4 @@ class Location:
 class Token:
     text: str
     type: str
-    source: Location
+    location: Location

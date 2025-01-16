@@ -26,7 +26,7 @@ def tokenize(source_code: str) -> list[Token]:
             # Token matched
             matched_token = True
             pos = match.end()
-            ln, col = index_to_coordinates(source_code, pos)
+            ln, col = index_to_coordinates(source_code, match.start())
             l = Location('string', ln, col)
             t = Token(match.group(0), token, l)
             res.append(t)
