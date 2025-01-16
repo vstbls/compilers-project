@@ -3,10 +3,11 @@ from compiler.classes import *
 
 def tokenize(source_code: str) -> list[Token]:
     tokens = {
-        'identifier': re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'), # identifiers
-        'integer': re.compile(r'[0-9]+'), # integers
-        #re.compile(r'#.*'), # comments
-        #re.compile(r'[+-/*]'), # operators
+        'comment': re.compile(r'(#|//).*'),
+        'identifier': re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
+        'integer': re.compile(r'[0-9]+'),
+        'operator': re.compile(r'([=!<>]=|[=*/<>+-])'),
+        'punctuation': re.compile(r'[(){},;]'),
     }
     ws = re.compile(r'\s') # whitespace
     
