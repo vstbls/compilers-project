@@ -6,6 +6,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
     
     def peek() -> Token:
+        nonlocal pos
         if pos < len(tokens):
             return tokens[pos]
         return Token(
@@ -21,6 +22,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if isinstance(expected, list) and token.text not in expected:
             comma_separated = ", ".join(f'"{e}"' for e in expected)
             raise ValueError(f'{token.location} expected on of: {comma_separated}')
+        nonlocal pos
         pos += 1
         return token
     
