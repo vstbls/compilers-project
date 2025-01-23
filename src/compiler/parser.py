@@ -62,5 +62,22 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         
         return left
+    
+    def parse_expression_right() -> ast.Expression:
+        left = parse_term()
+
+        if peek().text in ['+', '-']:
+            operator_token = consume()
+            operator = operator_token.text
+            
+            right = parse_expression_right()
+            
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
         
-    return parse_expression()
+        return left
+        
+    return parse_expression_right()

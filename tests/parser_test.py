@@ -4,7 +4,7 @@ import compiler.ast as ast
 
 
 def test_parser() -> None:
-    assert parse(tokenize("3 + 5 + 7")) == ast.BinaryOp(
+    """ assert parse(tokenize("3 + 5 + 7")) == ast.BinaryOp(
         ast.BinaryOp(
             ast.Literal(3),
             "+",
@@ -12,8 +12,17 @@ def test_parser() -> None:
         ),
         "+",
         ast.Literal(7)
-    )
+    ) """
     
+    assert parse(tokenize("3 + 5 + 7")) == ast.BinaryOp(
+        ast.Literal(3),
+        "+",
+        ast.BinaryOp(
+            ast.Literal(5),
+            "+",
+            ast.Literal(7)
+        )
+    )
     
     assert parse(tokenize("a + 5")) == ast.BinaryOp(
         ast.Identifier('a'),
