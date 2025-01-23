@@ -6,6 +6,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
     
     def peek() -> Token:
+        if len(tokens) == 0:
+            raise ValueError('Supplied file is empty')
         nonlocal pos
         if pos < len(tokens):
             return tokens[pos]
@@ -103,4 +105,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
         return left
         
-    return parse_expression()
+    expression = parse_expression()
+    if pos < len(tokens):
+        raise ValueError(f'{peek().location}: unexpected token')
+    return expression

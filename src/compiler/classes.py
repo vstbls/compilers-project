@@ -5,14 +5,20 @@ class Location:
     file: str
     line: int
     column: int
-    placeholder: bool = False
     
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Location):
             return NotImplemented
-        if self.placeholder or value.placeholder:
+        if isinstance(value, DummyLocation):
             return True
-        return (self.file == value.file) and (self.line == value.line) and (self.column == value.column) 
+        return (self.file == value.file and self.line == value.line and self.column == value.column)
+    
+class DummyLocation(Location):
+    
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Location):
+            return NotImplemented
+        return True
 
 @dataclass
 class Token:
