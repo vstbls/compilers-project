@@ -21,10 +21,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
             raise ValueError(f'{token.location} expected "{expected}"')
         if isinstance(expected, list) and token.text not in expected:
             comma_separated = ", ".join(f'"{e}"' for e in expected)
-            raise ValueError(f'{token.location} expected on of: {comma_separated}')
+            raise ValueError(f'{token.location} expected one of: {comma_separated}')
         nonlocal pos
         pos += 1
         return token
+    
+    def parse_parenthesized() -> ast.Expression:
+        consume('(')
+        expr = parse_expression()
+        consume(')')
+        return expr
     
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
@@ -39,6 +45,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Identifier(token.text)
     
     def parse_factor() -> ast.Expression:
+        if peek().text == '(':
+            return parse_parenthesized()
         if peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':

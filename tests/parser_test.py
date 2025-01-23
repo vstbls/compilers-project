@@ -2,9 +2,10 @@ from compiler.parser import parse
 from compiler.tokenizer import tokenize
 import compiler.ast as ast
 
+def parse_string(s: str) -> ast.Expression: return parse(tokenize(s))
 
-def test_parser() -> None:
-    assert parse(tokenize("3 +5+ 7")) == ast.BinaryOp(
+def test_addition_parsing() -> None:
+    assert parse_string("3 +5+ 7") == ast.BinaryOp(
         ast.BinaryOp(
             ast.Literal(3),
             "+",
@@ -15,7 +16,7 @@ def test_parser() -> None:
     )
     
     # TEST FOR RIGHT-ASSOCIATIVE PARSING
-    # assert parse(tokenize("3 + 5 + 7")) == ast.BinaryOp(
+    # assert parse_string("3 + 5 + 7")) == ast.BinaryOp(
     #     ast.Literal(3),
     #     "+",
     #     ast.BinaryOp(
@@ -25,25 +26,26 @@ def test_parser() -> None:
     #     )
     # )
     
-    assert parse(tokenize("a + 5")) == ast.BinaryOp(
+    assert parse_string("a + 5") == ast.BinaryOp(
         ast.Identifier('a'),
         "+",
         ast.Literal(5)
     )
     
-    assert parse(tokenize("a + b")) == ast.BinaryOp(
+    assert parse_string("a + b") == ast.BinaryOp(
         ast.Identifier('a'),
         "+",
         ast.Identifier('b')
     )
     
-    assert parse(tokenize("a / b")) == ast.BinaryOp(
+def test_multiplication_parsing() -> None:
+    assert parse_string("a / b") == ast.BinaryOp(
         ast.Identifier('a'),
         "/",
         ast.Identifier('b')
     )
     
-    assert parse(tokenize("3 *5   / 7")) == ast.BinaryOp(
+    assert parse_string("3 *5   / 7") == ast.BinaryOp(
         ast.BinaryOp(
             ast.Literal(3),
             "*",
@@ -53,7 +55,7 @@ def test_parser() -> None:
         ast.Literal(7)
     )
     
-    assert parse(tokenize("3 *5   - 7")) == ast.BinaryOp(
+    assert parse_string("3 *5   - 7") == ast.BinaryOp(
         ast.BinaryOp(
             ast.Literal(3),
             "*",
@@ -63,7 +65,7 @@ def test_parser() -> None:
         ast.Literal(7)
     )
     
-    assert parse(tokenize(" 3-3 *5   / 7")) == ast.BinaryOp(
+    assert parse_string(" 3-3 *5   / 7") == ast.BinaryOp(
         ast.Literal(3),
         "-",
         ast.BinaryOp(
@@ -74,5 +76,44 @@ def test_parser() -> None:
             ),
             "/",
             ast.Literal(7)
+        )
+    )
+
+def test_parenthesis_parsing() -> None:
+    assert parse_string(" 3-((3 *5)   / 7)") == ast.BinaryOp(
+        ast.Literal(3),
+        "-",
+        ast.BinaryOp(
+            ast.BinaryOp(
+                ast.Literal(3),
+                "*",
+                ast.Literal(5)
+            ),
+            "/",
+            ast.Literal(7)
+        )
+    )
+    
+    assert parse_string("(3-2) / 7") == ast.BinaryOp(
+        ast.BinaryOp(
+            ast.Literal(3),
+            '-',
+            ast.Literal(2)
+            ),
+        '/',
+        ast.Literal(value=7)
+    )
+    
+    assert parse_string("(3-2)/ (7+5)") == ast.BinaryOp(
+        left=ast.BinaryOp(
+            left=ast.Literal(value=3),
+            op='-',
+            right=ast.Literal(value=2)
+        ),
+        op='/',
+        right=ast.BinaryOp(
+            left=ast.Literal(value=7),
+            op='+',
+            right=ast.Literal(value=5)
         )
     )
