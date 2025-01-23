@@ -9,3 +9,15 @@ def test_parser() -> None:
         "+",
         ast.Literal(5)
     )
+    
+    assert parse(tokenize("a + 5")) == ast.BinaryOp(
+        ast.Identifier('a'),
+        "+",
+        ast.Literal(5)
+    )
+    
+    assert parse(tokenize("a + b")) == ast.BinaryOp(
+        ast.Identifier('a'),
+        "+",
+        ast.Identifier('b')
+    )

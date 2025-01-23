@@ -32,10 +32,24 @@ def parse(tokens: list[Token]) -> ast.Expression:
         token = consume()
         return ast.Literal(int(token.text))
     
+    def parse_identifier() -> ast.Identifier:
+        if peek().type != 'identifier':
+            raise TypeError(f'{peek().location}: expected an identifier')
+        token = consume()
+        return ast.Identifier(token.text)
+    
+    def parse_term() -> ast.Expression:
+        if peek().type == 'int_literal':
+            return parse_int_literal()
+        elif peek().type == 'identifier':
+            return parse_identifier()
+        else:
+            raise TypeError(f'{peek().location}: expected an integer literal or identifier')
+    
     def parse_expression() -> ast.BinaryOp:
-        left = parse_int_literal()
+        left = parse_term()
         operator_token = consume(['+', '-'])
-        right = parse_int_literal()
+        right = parse_term()
         return ast.BinaryOp(
             left,
             operator_token.text,

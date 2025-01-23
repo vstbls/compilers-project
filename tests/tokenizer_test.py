@@ -4,6 +4,11 @@ from compiler.classes import *
 def test_tokenizer_basics() -> None:
     L = Location('', 0, 0, True) # Dummy location that always evaluates to 'True' on comparison
     assert tokenize('test')[0].location == L
+    assert tokenize("a + 5") == [
+        Token('a', 'identifier', L),
+        Token('+', 'operator', L),
+        Token('5', 'int_literal', L)
+    ]
     assert tokenize("if  3\nwhile") == [
         Token('if', 'identifier', L),
         Token('3', 'int_literal', L),
