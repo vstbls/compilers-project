@@ -46,14 +46,21 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             raise TypeError(f'{peek().location}: expected an integer literal or identifier')
     
-    def parse_expression() -> ast.BinaryOp:
+    def parse_expression() -> ast.Expression:
         left = parse_term()
-        operator_token = consume(['+', '-'])
-        right = parse_term()
-        return ast.BinaryOp(
-            left,
-            operator_token.text,
-            right
-        )
+        
+        while peek().text in ['+', '-']:
+            operator_token = consume()
+            operator = operator_token.text
+            
+            right = parse_term()
+            
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+        
+        return left
         
     return parse_expression()
