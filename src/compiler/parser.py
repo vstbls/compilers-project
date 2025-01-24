@@ -55,26 +55,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_identifier()
         else:
             raise TypeError(f'{peek().location}: expected an integer literal or identifier')
-    
-    def parse_term() -> ast.Expression:
-        if peek().text == 'if':
-            return parse_if()
-        
-        left = parse_factor()
-        
-        while peek().text in ['*', '/']:
-            operator_token = consume()
-            operator = operator_token.text
-            right = parse_factor()
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
 
-        return left
-
-    def parse_if() -> ast.Expression:
+    def parse_if() -> ast.If:
         consume('if')
         condition = parse_expression()
 
@@ -91,7 +73,40 @@ def parse(tokens: list[Token]) -> ast.Expression:
             true_branch,
             false_branch
         )
+    
+    def parse_function(id: ast.Identifier) -> ast.Function:
+        consume('(')
+        args = []
+        while peek().text != ')':
+            args.append(parse_expression())
+            if peek().text != ')':
+                consume(',')
+        consume(')')
+        return ast.Function(
+            id,
+            args
+        )
+
+    def parse_term() -> ast.Expression:
+        if peek().text == 'if':
+            return parse_if()
         
+        left = parse_factor()
+
+        if isinstance(left, ast.Identifier) and peek().text == '(':
+            left = parse_function(left)
+        
+        while peek().text in ['*', '/']:
+            operator_token = consume()
+            operator = operator_token.text
+            right = parse_factor()
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+
+        return left
     
     def parse_expression() -> ast.Expression:
         left = parse_term()

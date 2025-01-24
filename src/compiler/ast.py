@@ -24,3 +24,8 @@ class If(Expression):
     condition: Expression
     true_branch: Expression
     false_branch: None | Expression
+
+@dataclass
+class Function(Expression):
+    name: Identifier
+    args: list[Expression]
