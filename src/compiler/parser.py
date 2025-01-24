@@ -57,6 +57,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
             raise TypeError(f'{peek().location}: expected an integer literal or identifier')
     
     def parse_term() -> ast.Expression:
+        if peek().text == 'if':
+            return parse_if()
+        
         left = parse_factor()
         
         while peek().text in ['*', '/']:
@@ -91,9 +94,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
     
     def parse_expression() -> ast.Expression:
-        if peek().text == 'if':
-            return parse_if()
-        left = parse_term() # Parses tokens (*/+-)
+        left = parse_term()
         
         while peek().text in ['+', '-']:
             operator_token = consume()
