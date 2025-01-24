@@ -76,12 +76,16 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_function(id: ast.Identifier) -> ast.Function:
         consume('(')
-        args = []
+        if peek().text == ')':
+            consume(')')
+            return ast.Function(id, [])
+        
+        args = [parse_expression()]
         while peek().text != ')':
+            consume(',')
             args.append(parse_expression())
-            if peek().text != ')':
-                consume(',')
         consume(')')
+
         return ast.Function(
             id,
             args
