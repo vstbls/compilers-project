@@ -18,3 +18,9 @@ class BinaryOp(Expression):
     left: Expression
     op: str
     right: Expression
+
+@dataclass
+class If(Expression):
+    condition: Expression
+    true_branch: Expression
+    false_branch: None | Expression

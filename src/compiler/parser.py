@@ -70,9 +70,30 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
 
         return left
+
+    def parse_if() -> ast.Expression:
+        consume('if')
+        condition = parse_expression()
+
+        consume('then')
+        true_branch = parse_expression()
+
+        false_branch = None
+        if peek().text == 'else':
+            consume('else')
+            false_branch = parse_expression()
+
+        return ast.If(
+            condition,
+            true_branch,
+            false_branch
+        )
+        
     
     def parse_expression() -> ast.Expression:
-        left = parse_term()
+        if peek().text == 'if':
+            return parse_if()
+        left = parse_term() # Parses tokens (*/+-)
         
         while peek().text in ['+', '-']:
             operator_token = consume()
