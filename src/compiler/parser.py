@@ -2,8 +2,11 @@ from compiler.tokenizer import Token
 import compiler.ast as ast
 
 
-def parse(tokens: list[Token]) -> ast.Expression:
+def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     pos = 0
+
+    def dprint(s: str):
+        if debug: print(s)
 
     left_assoc_binaryops = [
         ['or'],
@@ -13,6 +16,11 @@ def parse(tokens: list[Token]) -> ast.Expression:
         ['+', '-'],
         ['*', '/'],
     ]
+
+    left_prec_levels: dict[str, int] = {}
+    for i in range(len(left_assoc_binaryops)):
+        for op in left_assoc_binaryops[i]:
+            left_prec_levels[op] = i
 
     def peek() -> Token:
         if len(tokens) == 0:
@@ -39,7 +47,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
-        expr = parse_level(0)
+        expr = parse_expression_nr()
         consume(')')
         return expr
     
@@ -67,15 +75,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_if() -> ast.If:
         consume('if')
-        condition = parse_level(0)
+        condition = parse_expression_nr()
 
         consume('then')
-        true_branch = parse_level(0)
+        true_branch = parse_expression_nr()
 
         false_branch = None
         if peek().text == 'else':
             consume('else')
-            false_branch = parse_level(0)
+            false_branch = parse_expression_nr()
 
         return ast.If(
             condition,
@@ -89,10 +97,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             consume(')')
             return ast.Function(id, [])
         
-        args = [parse_level(0)]
+        args = [parse_expression_nr()]
         while peek().text != ')':
             consume(',')
-            args.append(parse_level(0))
+            args.append(parse_expression_nr())
         consume(')')
 
         return ast.Function(
@@ -171,7 +179,42 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         
         return left
+    
+    def parse_expression_nr() -> ast.Expression: # Non-recursive 
+        root = parse_factor()
 
+        prev_level = -1
+        while True:
+            operator_token = consume()
+            operator = operator_token.text
+            operator_level = sum([i + 1
+                                  if operator in left_assoc_binaryops[i]
+                                  else 0
+                                  for i in range(len(left_assoc_binaryops))
+                                  ])
+            if operator_level == 0: break # Operator not in left_assoc_binaryops
+
+            dprint(f'Operator: {operator}, level: {operator_level}, prev_level: {prev_level}')
+            
+            right = parse_factor()
+            if prev_level > operator_level or prev_level < 0:
+                root = ast.BinaryOp(
+                    root,
+                    operator,
+                    right
+                )
+            else:
+                root.right = ast.BinaryOp(
+                    root.right,
+                    operator,
+                    right
+                )
+            
+            dprint(f'{root}')
+
+            prev_level = operator_level
+
+        return root
     
     def parse_expression_right() -> ast.Expression:
         left = parse_factor()
@@ -193,4 +236,4 @@ def parse(tokens: list[Token]) -> ast.Expression:
     # expression = parse_expression()
     # if pos < len(tokens):
     #     raise ValueError(f'{peek().location}: unexpected token')
-    return parse_level(0)
+    return parse_expression_nr()
