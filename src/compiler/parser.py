@@ -67,15 +67,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_if() -> ast.If:
         consume('if')
-        condition = parse_expression()
+        condition = parse_level(0)
 
         consume('then')
-        true_branch = parse_expression()
+        true_branch = parse_level(0)
 
         false_branch = None
         if peek().text == 'else':
             consume('else')
-            false_branch = parse_expression()
+            false_branch = parse_level(0)
 
         return ast.If(
             condition,
@@ -89,10 +89,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             consume(')')
             return ast.Function(id, [])
         
-        args = [parse_expression()]
+        args = [parse_level(0)]
         while peek().text != ')':
             consume(',')
-            args.append(parse_expression())
+            args.append(parse_level(0))
         consume(')')
 
         return ast.Function(
@@ -140,7 +140,15 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     def parse_level(level: int) -> ast.Expression:
         if level == len(left_assoc_binaryops):
-            return parse_factor()
+            if peek().text == 'if':
+                return parse_if()
+            
+            expr = parse_factor()
+
+            if isinstance(expr, ast.Identifier) and peek().text == '(':
+                expr = parse_function(expr)
+            
+            return expr
 
         left = parse_level(level + 1)
         
