@@ -4,7 +4,16 @@ import compiler.ast as ast
 
 def parse(tokens: list[Token]) -> ast.Expression:
     pos = 0
-    
+
+    left_assoc_binaryops = [
+        ['or'],
+        ['and'],
+        ['==', '!='],
+        ['<', '<=', '>', '>='],
+        ['+', '-'],
+        ['*', '/'],
+    ]
+
     def peek() -> Token:
         if len(tokens) == 0:
             raise ValueError('Supplied file is empty')
@@ -30,7 +39,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
-        expr = parse_expression()
+        expr = parse_level(0)
         consume(')')
         return expr
     
@@ -100,7 +109,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if isinstance(left, ast.Identifier) and peek().text == '(':
             left = parse_function(left)
         
-        while peek().text in ['*', '/']:
+        while peek().text in ['*', '/', '%']:
             operator_token = consume()
             operator = operator_token.text
             right = parse_factor()
@@ -128,6 +137,33 @@ def parse(tokens: list[Token]) -> ast.Expression:
             )
         
         return left
+
+    def parse_level(level: int) -> ast.Expression:
+        if level == len(left_assoc_binaryops):
+            return parse_factor()
+
+        left = parse_level(level + 1)
+        
+        while True:
+            operator = peek().text
+            operator_level = -1
+
+            for i in range(level, len(left_assoc_binaryops)):
+                if operator in left_assoc_binaryops[i]:
+                    operator_level = i
+                    consume(operator)
+            if operator_level < 0: break
+
+            right = parse_level(operator_level)
+
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+        
+        return left
+
     
     def parse_expression_right() -> ast.Expression:
         left = parse_factor()
@@ -146,7 +182,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         
         return left
         
-    expression = parse_expression()
-    if pos < len(tokens):
-        raise ValueError(f'{peek().location}: unexpected token')
-    return expression
+    # expression = parse_expression()
+    # if pos < len(tokens):
+    #     raise ValueError(f'{peek().location}: unexpected token')
+    return parse_level(0)
