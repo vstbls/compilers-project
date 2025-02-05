@@ -20,6 +20,11 @@ class BinaryOp(Expression):
     right: Expression
 
 @dataclass
+class UnaryOp(Expression):
+    op: str
+    param: Expression
+
+@dataclass
 class If(Expression):
     condition: Expression
     true_branch: Expression

@@ -14,7 +14,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         ['==', '!='],
         ['<', '<=', '>', '>='],
         ['+', '-'],
-        ['*', '/'],
+        ['*', '/', '%'],
     ]
 
     left_prec_level: dict[str, int] = {}
@@ -180,8 +180,16 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         
         return left
     
+    def parse_unary() -> ast.Expression:
+        if peek().text in ['-', 'not']:
+            operator_token = consume()
+            operator = operator_token.text
+            parameter = parse_unary() # Recurse to find the first non-unary token
+            return ast.UnaryOp(operator, parameter)
+        return parse_factor()
+
     def parse_expression_nr() -> ast.Expression: # Non-recursive 
-        root = parse_factor()
+        root = parse_unary()
 
         while True:
             operator_token = consume()
@@ -192,7 +200,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
             dprint(f'Operator: {operator}, level: {operator_level}')
             
-            right = parse_factor()
+            right = parse_unary()
             
             node = root
             replace_root = False
