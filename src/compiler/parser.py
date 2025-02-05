@@ -17,10 +17,10 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         ['*', '/'],
     ]
 
-    left_prec_levels: dict[str, int] = {}
+    left_prec_level: dict[str, int] = {}
     for i in range(len(left_assoc_binaryops)):
         for op in left_assoc_binaryops[i]:
-            left_prec_levels[op] = i
+            left_prec_level[op] = i + 1
 
     def peek() -> Token:
         if len(tokens) == 0:
@@ -183,36 +183,54 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     def parse_expression_nr() -> ast.Expression: # Non-recursive 
         root = parse_factor()
 
-        prev_level = -1
         while True:
             operator_token = consume()
             operator = operator_token.text
-            operator_level = sum([i + 1
-                                  if operator in left_assoc_binaryops[i]
-                                  else 0
-                                  for i in range(len(left_assoc_binaryops))
-                                  ])
-            if operator_level == 0: break # Operator not in left_assoc_binaryops
+            if operator not in left_prec_level:
+                break # Need to fix this, currently can't handle other operators (=, -, ...)
+            operator_level = left_prec_level[operator]
 
-            dprint(f'Operator: {operator}, level: {operator_level}, prev_level: {prev_level}')
+            dprint(f'Operator: {operator}, level: {operator_level}')
             
             right = parse_factor()
-            if prev_level > operator_level or prev_level < 0:
-                root = ast.BinaryOp(
-                    root,
-                    operator,
-                    right
-                )
+            
+            node = root
+            at_root = True
+            while True: # Traverse tree until at the right level
+                if not isinstance(node, ast.BinaryOp): break # Base case, tree is just the root node
+                elif not isinstance(node.right, ast.BinaryOp): break # The node's right child is a leaf
+                elif left_prec_level[node.right.op] >= operator_level: break
+                node = node.right
+                at_root = False
+
+            if at_root:
+                replace_root = False
+                if not isinstance(node, ast.BinaryOp):
+                    replace_root = True
+                else:
+                    replace_root = left_prec_level[node.op] >= operator_level
+                if replace_root:
+                    root = ast.BinaryOp(
+                        root,
+                        operator,
+                        right
+                    )
+                else:
+                    prev_right = node.right
+                    node.right = ast.BinaryOp(
+                        prev_right,
+                        operator,
+                        right
+                    )
             else:
-                root.right = ast.BinaryOp(
-                    root.right,
+                prev_right = node.right
+                node.right = ast.BinaryOp(
+                    prev_right,
                     operator,
                     right
                 )
             
             dprint(f'{root}')
-
-            prev_level = operator_level
 
         return root
     
