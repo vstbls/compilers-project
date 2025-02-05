@@ -184,18 +184,22 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         if peek().text in ['-', 'not']:
             operator_token = consume()
             operator = operator_token.text
+
             parameter = parse_unary() # Recurse to find the first non-unary token
+
             return ast.UnaryOp(operator, parameter)
+        
         return parse_factor()
 
     def parse_expression_nr() -> ast.Expression: # Non-recursive 
         root = parse_unary()
 
         while True:
+            if peek().text not in left_prec_level:
+                break
+
             operator_token = consume()
             operator = operator_token.text
-            if operator not in left_prec_level:
-                break # Need to fix this, currently can't handle other operators (=, -, ...)
             operator_level = left_prec_level[operator]
 
             dprint(f'Operator: {operator}, level: {operator_level}')
@@ -232,6 +236,22 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
         return root
     
+    def parse_assignment() -> ast.Expression:
+        left = parse_expression_nr()
+        if peek().text == '=':
+            operator_token = consume()
+            operator = operator_token.text
+
+            right = parse_assignment()
+
+            left = ast.BinaryOp(
+                left,
+                operator,
+                right
+            )
+
+        return left
+
     def parse_expression_right() -> ast.Expression:
         left = parse_factor()
 
@@ -252,4 +272,4 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     # expression = parse_expression()
     # if pos < len(tokens):
     #     raise ValueError(f'{peek().location}: unexpected token')
-    return parse_expression_nr()
+    return parse_assignment()
