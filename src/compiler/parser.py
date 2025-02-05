@@ -195,33 +195,23 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             right = parse_factor()
             
             node = root
-            at_root = True
+            replace_root = False
             while True: # Traverse tree until at the right level
-                if not isinstance(node, ast.BinaryOp): break # Base case, tree is just the root node
-                elif not isinstance(node.right, ast.BinaryOp): break # The node's right child is a leaf
-                elif left_prec_level[node.right.op] >= operator_level: break
-                node = node.right
-                at_root = False
-
-            if at_root:
-                replace_root = False
-                if not isinstance(node, ast.BinaryOp):
+                if not isinstance(node, ast.BinaryOp): # Base case, tree is just the root node
                     replace_root = True
-                else:
-                    replace_root = left_prec_level[node.op] >= operator_level
-                if replace_root:
-                    root = ast.BinaryOp(
-                        root,
-                        operator,
-                        right
-                    )
-                else:
-                    prev_right = node.right
-                    node.right = ast.BinaryOp(
-                        prev_right,
-                        operator,
-                        right
-                    )
+                    break
+                if not isinstance(node.right, ast.BinaryOp): # The node's right child is a leaf
+                    replace_root = left_prec_level[node.op] >= operator_level # This can only evaluate to true if the node is the root
+                    break
+                if left_prec_level[node.right.op] >= operator_level: break
+                node = node.right
+
+            if replace_root:
+                root = ast.BinaryOp(
+                    root,
+                    operator,
+                    right
+                )
             else:
                 prev_right = node.right
                 node.right = ast.BinaryOp(
