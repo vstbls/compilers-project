@@ -47,7 +47,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     
     def parse_parenthesized() -> ast.Expression:
         consume('(')
-        expr = parse_expression_nr()
+        expr = parse_expression()
         consume(')')
         return expr
     
@@ -75,15 +75,15 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
     def parse_if() -> ast.If:
         consume('if')
-        condition = parse_expression_nr()
+        condition = parse_expression()
 
         consume('then')
-        true_branch = parse_expression_nr()
+        true_branch = parse_expression()
 
         false_branch = None
         if peek().text == 'else':
             consume('else')
-            false_branch = parse_expression_nr()
+            false_branch = parse_expression()
 
         return ast.If(
             condition,
@@ -97,10 +97,10 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             consume(')')
             return ast.Function(id, [])
         
-        args = [parse_expression_nr()]
+        args = [parse_expression()]
         while peek().text != ')':
             consume(',')
-            args.append(parse_expression_nr())
+            args.append(parse_expression())
         consume(')')
 
         return ast.Function(
@@ -112,73 +112,12 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         if peek().text == 'if':
             return parse_if()
         
-        left = parse_factor()
+        term = parse_factor()
 
-        if isinstance(left, ast.Identifier) and peek().text == '(':
-            left = parse_function(left)
-        
-        while peek().text in ['*', '/', '%']:
-            operator_token = consume()
-            operator = operator_token.text
-            right = parse_factor()
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
+        if isinstance(term, ast.Identifier) and peek().text == '(':
+            term = parse_function(term)
 
-        return left
-    
-    def parse_expression() -> ast.Expression:
-        left = parse_term()
-        
-        while peek().text in ['+', '-']:
-            operator_token = consume()
-            operator = operator_token.text
-            
-            right = parse_term()
-            
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
-        
-        return left
-
-    def parse_level(level: int) -> ast.Expression:
-        if level == len(left_assoc_binaryops):
-            if peek().text == 'if':
-                return parse_if()
-            
-            expr = parse_factor()
-
-            if isinstance(expr, ast.Identifier) and peek().text == '(':
-                expr = parse_function(expr)
-            
-            return expr
-
-        left = parse_level(level + 1)
-        
-        while True:
-            operator = peek().text
-            operator_level = -1
-
-            for i in range(level, len(left_assoc_binaryops)):
-                if operator in left_assoc_binaryops[i]:
-                    operator_level = i
-                    consume(operator)
-            if operator_level < 0: break
-
-            right = parse_level(operator_level)
-
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
-        
-        return left
+        return term
     
     def parse_unary() -> ast.Expression:
         if peek().text in ['-', 'not']:
@@ -189,9 +128,9 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
             return ast.UnaryOp(operator, parameter)
         
-        return parse_factor()
+        return parse_term()
 
-    def parse_expression_nr() -> ast.Expression: # Non-recursive 
+    def parse_expression() -> ast.Expression: # Non-recursive 
         root = parse_unary()
 
         while True:
@@ -237,7 +176,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         return root
     
     def parse_assignment() -> ast.Expression:
-        left = parse_expression_nr()
+        left = parse_expression()
         if peek().text == '=':
             operator_token = consume()
             operator = operator_token.text
@@ -252,24 +191,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
         return left
 
-    def parse_expression_right() -> ast.Expression:
-        left = parse_factor()
-
-        if peek().text in ['+', '-']:
-            operator_token = consume()
-            operator = operator_token.text
-            
-            right = parse_expression_right()
-            
-            left = ast.BinaryOp(
-                left,
-                operator,
-                right
-            )
-        
-        return left
-        
-    # expression = parse_expression()
-    # if pos < len(tokens):
-    #     raise ValueError(f'{peek().location}: unexpected token')
-    return parse_assignment()
+    expression = parse_assignment()
+    if pos < len(tokens):
+        raise ValueError(f'{peek().location}: unexpected token')
+    return expression
