@@ -5,7 +5,7 @@ import compiler.ast as ast
 def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     pos = 0
 
-    def dprint(s: str):
+    def dprint(s: str) -> None:
         if debug: print(s)
 
     left_assoc_binaryops = [
@@ -45,11 +45,11 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         pos += 1
         return token
     
-    def parse_parenthesized() -> ast.Expression:
+    def parse_parenthesized() -> ast.UnaryOp:
         consume('(')
         expr = parse_expression()
         consume(')')
-        return expr
+        return ast.UnaryOp('()', expr) # Super super hacky solution
     
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
@@ -148,7 +148,8 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             node = root
             replace_root = False
             while True: # Traverse tree until at the right level
-                if not isinstance(node, ast.BinaryOp): # Base case, tree is just the root node
+                if not isinstance(node, ast.BinaryOp): # Base case, tree is just the root node.
+                    # THIS IS ACTUALLY A PROBLEM IF THE FIRST NODE IS A PARENTHESIZED EXPRESSION, I.E A BINARYOP
                     replace_root = True
                     break
                 if not isinstance(node.right, ast.BinaryOp): # The node's right child is a leaf
@@ -164,6 +165,8 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
                     right
                 )
             else:
+                if not isinstance(node, ast.BinaryOp): # This should always be true, but the error checker required it
+                    raise TypeError('Tried modifying nonexistent child node of operator')
                 prev_right = node.right
                 node.right = ast.BinaryOp(
                     prev_right,

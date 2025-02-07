@@ -1,6 +1,7 @@
 from compiler.parser import parse
 from compiler.tokenizer import tokenize
 import compiler.ast as ast
+from compiler.ast import *
 
 def parse_string(s: str) -> ast.Expression: return parse(tokenize(s))
 
@@ -92,37 +93,222 @@ def test_parenthesis_parsing() -> None:
     assert parse_string(" 3-((3 *5)   / 7)") == ast.BinaryOp(
         ast.Literal(3),
         "-",
-        ast.BinaryOp(
+        ast.UnaryOp(
+            "()",
             ast.BinaryOp(
-                ast.Literal(3),
-                "*",
-                ast.Literal(5)
-            ),
-            "/",
-            ast.Literal(7)
+                ast.UnaryOp(
+                    "()",
+                    ast.BinaryOp(
+                        ast.Literal(3),
+                        "*",
+                        ast.Literal(5)
+                    ),
+                ),
+                "/",
+                ast.Literal(7)
+            )
         )
+        
     )
     
     assert parse_string("(3-2) / 7") == ast.BinaryOp(
-        ast.BinaryOp(
-            ast.Literal(3),
-            '-',
-            ast.Literal(2)
+        ast.UnaryOp(
+            "()",
+            ast.BinaryOp(
+                ast.Literal(3),
+                '-',
+                ast.Literal(2)
             ),
+        ),
         '/',
         ast.Literal(value=7)
     )
     
     assert parse_string("(3-2)/ (7+5)") == ast.BinaryOp(
-        left=ast.BinaryOp(
-            left=ast.Literal(value=3),
-            op='-',
-            right=ast.Literal(value=2)
+        ast.UnaryOp(
+            "()",
+            ast.BinaryOp(
+                ast.Literal(value=3),
+                '-',
+                ast.Literal(value=2)
+            )
         ),
-        op='/',
-        right=ast.BinaryOp(
-            left=ast.Literal(value=7),
-            op='+',
-            right=ast.Literal(value=5)
+        '/',
+        ast.UnaryOp(
+            "()",
+            ast.BinaryOp(
+                ast.Literal(value=7),
+                '+',
+                ast.Literal(value=5)
+            )
         )
     )
+
+def test_conditional_parsing() -> None:
+    assert parse_string("if a then b else c") == If(
+        condition=Identifier('a'),
+        true_branch=Identifier('b'),
+        false_branch=Identifier('c')
+    )
+
+    assert parse_string("if if a then b else c then a + 2 else (a or b)") == If(
+        condition=If(
+            condition=Identifier('a'),
+            true_branch=Identifier('b'),
+            false_branch=Identifier('c')
+        ),
+        true_branch=BinaryOp(
+            Identifier('a'),
+            '+',
+            Literal(2)
+        ),
+        false_branch=UnaryOp(
+            "()",
+            BinaryOp(
+                Identifier('a'),
+                'or',
+                Identifier('b')
+            )
+        )
+    )
+
+    assert parse_string("1 + (if a then 2 else 3) * 4") == BinaryOp(
+        Literal(1),
+        '+',
+        BinaryOp(
+            UnaryOp(
+                "()",
+                If(
+                    condition=Identifier('a'),
+                    true_branch=Literal(2),
+                    false_branch=Literal(3)
+                )
+            ),
+            '*',
+            Literal(4)
+        )
+    )
+
+def test_unary_parsing() -> None:
+    assert parse_string("not a + (- bbb5ifnotb)") == BinaryOp(
+        UnaryOp(
+            'not',
+            Identifier('a')
+        ),
+        '+',
+        UnaryOp(
+            '()',
+            UnaryOp(
+                '-',
+                Identifier('bbb5ifnotb')
+            )
+        )
+    )
+
+    assert parse_string("not not - (- not a)") == UnaryOp(
+        'not',
+        UnaryOp(
+            'not',
+            UnaryOp(
+                '-',
+                UnaryOp(
+                    '()',
+                    UnaryOp(
+                        '-',
+                        UnaryOp(
+                            'not',
+                            Identifier('a')
+                        )
+                    )
+                )
+            )
+        )
+    )
+
+def test_function_parsing() -> None:
+    assert parse_string("f(a)") == Function(
+        Identifier('f'),
+        [
+            Identifier('a')
+        ]
+    )
+
+    assert parse_string("    f  (1,2,   4,   b     )     ") == Function(
+        Identifier('f'),
+        [
+            Literal(1),
+            Literal(2),
+            Literal(4),
+            Identifier('b')
+        ]
+    )
+
+    assert parse_string("a + fun (a+b, not c) * 2") == BinaryOp(
+        Identifier('a'),
+        '+',
+        BinaryOp(
+            Function(
+                Identifier('fun'),
+                [
+                    BinaryOp(
+                        Identifier('a'),
+                        '+',
+                        Identifier('b')
+                    ),
+                    UnaryOp(
+                        'not',
+                        Identifier('c')
+                    )
+                ]
+            ),
+            '*',
+            Literal(2)
+        )
+    )
+
+def test_parsing_precedence() -> None:
+    assert parse_string("4 < 5 + 7 / 6") == BinaryOp(
+        Literal(4),
+        '<',
+        BinaryOp(
+            Literal(5),
+            '+',
+            BinaryOp(
+                Literal(7),
+                '/',
+                Literal(6)
+            )
+        )
+    )
+
+    assert parse_string("4 + 3 or 2 == 7 % 5 and 2 > 2") == BinaryOp(
+        BinaryOp(
+            Literal(4),
+            '+',
+            Literal(3)
+        ),
+        'or',
+        BinaryOp(
+            BinaryOp(
+                Literal(2),
+                '==',
+                BinaryOp(
+                    Literal(7),
+                    '%',
+                    Literal(5)
+                )
+            ),
+            'and',
+            BinaryOp(
+                Literal(2),
+                '>',
+                Literal(2)
+            )
+        )
+    )
+
+def test_trailing_tokens() -> None:
+    assert_parse_fail("1 + 2 3")
+    assert_parse_fail("* 2")
+    assert_parse_fail("1 2 3 4")
+    assert_parse_fail("fun())")
