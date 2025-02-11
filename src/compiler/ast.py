@@ -34,3 +34,8 @@ class If(Expression):
 class Function(Expression):
     name: Identifier
     args: list[Expression]
+
+@dataclass
+class Block(Expression):
+    expressions: list[Expression]
+    evaluate: Expression | None
