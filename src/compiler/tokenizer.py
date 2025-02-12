@@ -4,11 +4,11 @@ from compiler.classes import *
 def tokenize(source_code: str) -> list[Token]:
     tokens = {
         'comment': re.compile(r'(#|//).*'),
+        'bool_literal': re.compile(r'(true|false)'),
         'identifier': re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
         'int_literal': re.compile(r'[0-9]+'),
         'operator': re.compile(r'([=!<>]=|[=*/%<>+-])'),
         'punctuation': re.compile(r'[(){},;]'),
-        # missing: bool
     }
     ws = re.compile(r'(\s|(#|//).*)') # whitespace and comments
     

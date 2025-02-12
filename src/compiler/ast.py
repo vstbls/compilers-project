@@ -37,5 +37,15 @@ class Function(Expression):
 
 @dataclass
 class Block(Expression):
-    expressions: list[Expression]
-    result: Expression | None
+    exprs: list[Expression]
+    res: Expression | None
+
+@dataclass
+class While(Expression):
+    condition: Expression
+    expr: Expression
+
+@dataclass
+class Var(Expression):
+    id: Identifier
+    expr: Expression

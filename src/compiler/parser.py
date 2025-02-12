@@ -45,6 +45,40 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         pos += 1
         return token
     
+    def parse_parenthesized() -> ast.UnaryOp:
+        consume('(')
+        expr = parse_expression()
+        consume(')')
+        return ast.UnaryOp('()', expr) # Super super hacky solution
+    
+    def parse_int_literal() -> ast.Literal:
+        if peek().type != 'int_literal':
+            raise TypeError(f'{peek().location}: expected an integer literal')
+        token = consume()
+        return ast.Literal(int(token.text))
+    
+    def parse_bool_literal() -> ast.Literal:
+        if peek().type != 'bool_literal':
+            raise TypeError(f'{peek().location}: expected a boolean literal')
+        token = consume(['true', 'false'])
+        return ast.Literal(token.text == 'true')
+
+    def parse_identifier() -> ast.Identifier:
+        if peek().type != 'identifier':
+            raise TypeError(f'{peek().location}: expected an identifier')
+        token = consume()
+        return ast.Identifier(token.text)
+    
+    def parse_factor() -> ast.Expression:
+        if peek().type == 'int_literal':
+            return parse_int_literal()
+        elif peek().type == 'bool_literal':
+            return parse_bool_literal()
+        elif peek().type == 'identifier':
+            return parse_identifier()
+        else:
+            raise TypeError(f'{peek().location}: expected an integer or boolean literal or identifier')
+
     def parse_block() -> ast.Block:
         consume('{')
 
@@ -64,36 +98,6 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         consume('}')
         
         return ast.Block(expressions, result)
-    
-    def parse_parenthesized() -> ast.UnaryOp:
-        consume('(')
-        expr = parse_expression()
-        consume(')')
-        return ast.UnaryOp('()', expr) # Super super hacky solution
-    
-    def parse_int_literal() -> ast.Literal:
-        if peek().type != 'int_literal':
-            raise TypeError(f'{peek().location}: expected an integer literal')
-        token = consume()
-        return ast.Literal(int(token.text))
-    
-    def parse_identifier() -> ast.Identifier:
-        if peek().type != 'identifier':
-            raise TypeError(f'{peek().location}: expected an identifier')
-        token = consume()
-        return ast.Identifier(token.text)
-    
-    def parse_factor() -> ast.Expression:
-        if peek().text == '{':
-            return parse_block()
-        if peek().text == '(':
-            return parse_parenthesized()
-        if peek().type == 'int_literal':
-            return parse_int_literal()
-        elif peek().type == 'identifier':
-            return parse_identifier()
-        else:
-            raise TypeError(f'{peek().location}: expected an integer literal or identifier')
 
     def parse_if() -> ast.If:
         consume('if')
@@ -113,6 +117,24 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             false_branch
         )
     
+    def parse_while() -> ast.While:
+        consume('while')
+        condition = parse_assignment()
+
+        consume('do')
+        expr = parse_assignment()
+
+        return ast.While(condition, expr)
+
+    def parse_var() -> ast.Var:
+        consume('var')
+        id = parse_identifier()
+
+        consume('=')
+        expr = parse_assignment()
+
+        return ast.Var(id, expr)
+    
     def parse_function(id: ast.Identifier) -> ast.Function:
         consume('(')
         if peek().text == ')':
@@ -131,8 +153,16 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         )
 
     def parse_term() -> ast.Expression:
+        if peek().text == '{':
+            return parse_block()
+        if peek().text == '(':
+            return parse_parenthesized()
         if peek().text == 'if':
             return parse_if()
+        if peek().text == 'while':
+            return parse_while()
+        if peek().text == 'var':
+            return parse_var()
         
         term = parse_factor()
 
