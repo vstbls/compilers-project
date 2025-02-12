@@ -35,4 +35,9 @@ def test_tokenizer_basics() -> None:
         Token(';', 'punctuation', L),
         Token('}', 'punctuation', L),
     ]
+    assert tokenize("true 1 false") == [
+        Token('true', 'bool_literal', L),
+        Token('1', 'int_literal', L),
+        Token('false', 'bool_literal', L),
+    ]
     return

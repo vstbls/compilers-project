@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -28,17 +28,17 @@ class UnaryOp(Expression):
 class If(Expression):
     condition: Expression
     true_branch: Expression
-    false_branch: None | Expression
+    false_branch: None | Expression = None
 
 @dataclass
 class Function(Expression):
     name: Identifier
-    args: list[Expression]
+    args: list[Expression] = field(default_factory=list)
 
 @dataclass
 class Block(Expression):
     exprs: list[Expression]
-    res: Expression | None
+    res: Expression | None = None
 
 @dataclass
 class While(Expression):

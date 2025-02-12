@@ -47,6 +47,12 @@ def test_addition_parsing() -> None:
         "+",
         ast.Identifier('b')
     )
+
+    assert parse_string("1 + false") == ast.BinaryOp(
+        Literal(1),
+        "+",
+        Literal(False)
+    )
     
 def test_multiplication_parsing() -> None:
     assert parse_string("a / b") == ast.BinaryOp(
@@ -189,6 +195,16 @@ def test_conditional_parsing() -> None:
         )
     )
 
+    assert parse_string("if true then f(false)") == If(
+        Literal(True),
+        Function(
+            Identifier('f'),
+            [
+                Literal(False)
+            ]
+        )
+    )
+
 def test_unary_parsing() -> None:
     assert parse_string("not a + (- bbb5ifnotb)") == BinaryOp(
         UnaryOp(
@@ -266,6 +282,24 @@ def test_function_parsing() -> None:
         )
     )
 
+    assert parse_string("coolfunc()") == Function(
+        Identifier('coolfunc')
+    )
+
+def test_while_parsing() -> None:
+    assert parse_string("while true do f(a)") == While(
+        Literal(True),
+        Function(
+            Identifier('f'),
+            [
+                Identifier('a')
+            ]
+        )
+    )
+
+def test_var_parsing() -> None:
+    pass # Kinda tested in block_parsing, that's good enough for me
+
 def test_parsing_precedence() -> None:
     assert parse_string("4 < 5 + 7 / 6") == BinaryOp(
         Literal(4),
@@ -305,6 +339,60 @@ def test_parsing_precedence() -> None:
                 Literal(2)
             )
         )
+    )
+
+def test_block_parsing() -> None:
+    assert parse_string('''
+{
+    while f() do {
+        var x = 10;
+        var y = if g(x) then {
+            x = x + 1;
+            x
+        } else {
+            g(x)
+        };  # <-- (this semicolon will become optional later)
+        g(y);
+    };  # <------ (this too)
+    123
+}
+    ''') == Block(
+        [
+            While(
+                Function(Identifier('f')),
+                Block(
+                    [
+                        Var(Identifier('x'), Literal(10)),
+                        Var(
+                            Identifier('y'),
+                            If(
+                                Function(Identifier('g'), [Identifier('x')]),
+                                Block(
+                                    [
+                                        BinaryOp(
+                                            Identifier('x'),
+                                            '=',
+                                            BinaryOp(
+                                                Identifier('x'),
+                                                '+',
+                                                Literal(1)
+                                            )
+                                        )
+                                    ],
+                                    Identifier('x')
+                                ),
+                                Block(
+                                    [],
+                                    Function(Identifier('g'), [Identifier('x')])
+                                )
+                            )
+                        ),
+                        Function(Identifier('g'), [Identifier('y')])
+                    ]
+                )
+            )
+        ],
+        Literal(123)
     )
 
 def test_trailing_tokens() -> None:
