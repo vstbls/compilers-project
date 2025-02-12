@@ -45,6 +45,26 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         pos += 1
         return token
     
+    def parse_block() -> ast.Block:
+        consume('{')
+
+        expressions = []
+        result = None
+        while peek().text != '}':
+            expr = parse_assignment()
+            if peek().text == ';':
+                consume(';')
+                expressions.append(expr)
+            else:
+                result = expr
+                break
+
+        if peek().text != '}':
+            raise ValueError(f'{peek().location} expected end of block after result expression')
+        consume('}')
+        
+        return ast.Block(expressions, result)
+    
     def parse_parenthesized() -> ast.UnaryOp:
         consume('(')
         expr = parse_expression()
@@ -64,6 +84,8 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         return ast.Identifier(token.text)
     
     def parse_factor() -> ast.Expression:
+        if peek().text == '{':
+            return parse_block()
         if peek().text == '(':
             return parse_parenthesized()
         if peek().type == 'int_literal':
@@ -149,7 +171,6 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             replace_root = False
             while True: # Traverse tree until at the right level
                 if not isinstance(node, ast.BinaryOp): # Base case, tree is just the root node.
-                    # THIS IS ACTUALLY A PROBLEM IF THE FIRST NODE IS A PARENTHESIZED EXPRESSION, I.E A BINARYOP
                     replace_root = True
                     break
                 if not isinstance(node.right, ast.BinaryOp): # The node's right child is a leaf
