@@ -7,6 +7,11 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
     def dprint(s: str) -> None:
         if debug: print(s)
+        
+    def isnt_var(expr: ast.Expression) -> ast.Expression:
+        if isinstance(expr, ast.Var):
+            raise TypeError('Unexpected variable declaration')
+        return expr
 
     left_assoc_binaryops = [
         ['or'],
@@ -47,7 +52,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     
     def parse_parenthesized() -> ast.UnaryOp:
         consume('(')
-        expr = parse_expression()
+        expr = isnt_var(parse_assignment())
         consume(')')
         return ast.UnaryOp('()', expr) # Super super hacky solution
     
@@ -101,15 +106,15 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
     def parse_if() -> ast.If:
         consume('if')
-        condition = parse_expression()
+        condition = isnt_var(parse_assignment())
 
         consume('then')
-        true_branch = parse_expression()
+        true_branch = isnt_var(parse_assignment())
 
         false_branch = None
         if peek().text == 'else':
             consume('else')
-            false_branch = parse_expression()
+            false_branch = isnt_var(parse_assignment())
 
         return ast.If(
             condition,
@@ -119,10 +124,10 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     
     def parse_while() -> ast.While:
         consume('while')
-        condition = parse_assignment()
+        condition = isnt_var(parse_assignment())
 
         consume('do')
-        expr = parse_assignment()
+        expr = isnt_var(parse_assignment())
 
         return ast.While(condition, expr)
 
@@ -131,7 +136,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         id = parse_identifier()
 
         consume('=')
-        expr = parse_assignment()
+        expr = isnt_var(parse_assignment())
 
         return ast.Var(id, expr)
     
@@ -141,10 +146,10 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             consume(')')
             return ast.Function(id, [])
         
-        args = [parse_expression()]
+        args = [isnt_var(parse_assignment())]
         while peek().text != ')':
             consume(',')
-            args.append(parse_expression())
+            args.append(isnt_var(parse_assignment()))
         consume(')')
 
         return ast.Function(
@@ -162,6 +167,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         if peek().text == 'while':
             return parse_while()
         if peek().text == 'var':
+            # Raise an error if not parsed in a block
             return parse_var()
         
         term = parse_factor()
@@ -235,7 +241,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             operator_token = consume()
             operator = operator_token.text
 
-            right = parse_assignment()
+            right = isnt_var(parse_assignment())
 
             left = ast.BinaryOp(
                 left,
