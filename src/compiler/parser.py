@@ -11,7 +11,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         
     def isnt_var(expr: ast.Expression) -> ast.Expression:
         if isinstance(expr, ast.Var):
-            raise TypeError('Unexpected variable declaration')
+            raise TypeError(f'{expr.location}: Unexpected variable declaration')
         return expr
 
     left_assoc_binaryops = [
@@ -54,28 +54,36 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         return token
     
     def parse_parenthesized() -> ast.UnaryOp:
-        consume('(')
+        loc = consume('(').location
         expr = isnt_var(parse_assignment())
         consume(')')
-        return ast.UnaryOp('()', expr) # Super super hacky solution
+        ret = ast.UnaryOp('()', expr) # Super super hacky solution
+        ret.location = loc
+        return ret
     
     def parse_int_literal() -> ast.Literal:
         if peek().type != 'int_literal':
             raise TypeError(f'{peek().location}: expected an integer literal')
         token = consume()
-        return ast.Literal(int(token.text))
+        ret = ast.Literal(int(token.text))
+        ret.location = token.location
+        return ret
     
     def parse_bool_literal() -> ast.Literal:
         if peek().type != 'bool_literal':
             raise TypeError(f'{peek().location}: expected a boolean literal')
         token = consume(['true', 'false'])
-        return ast.Literal(token.text == 'true')
+        ret = ast.Literal(token.text == 'true')
+        ret.location = token.location
+        return ret
 
     def parse_identifier() -> ast.Identifier:
         if peek().type != 'identifier':
             raise TypeError(f'{peek().location}: expected an identifier')
         token = consume()
-        return ast.Identifier(token.text)
+        ret = ast.Identifier(token.text)
+        ret.location = token.location
+        return ret
     
     def parse_factor() -> ast.Expression:
         if peek().type == 'int_literal':
@@ -89,7 +97,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
     def parse_block() -> ast.Block:
         nonlocal prev_token
-        consume('{')
+        loc = consume('{').location
 
         expressions = []
         result = None
@@ -110,10 +118,12 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             raise ValueError(f'{peek().location} expected end of block after result expression')
         consume('}')
         
-        return ast.Block(expressions, result)
+        ret = ast.Block(expressions, result)
+        ret.location = loc
+        return ret
 
     def parse_if() -> ast.If:
-        consume('if')
+        loc = consume('if').location
         condition = isnt_var(parse_assignment())
 
         consume('then')
@@ -124,35 +134,43 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             consume('else')
             false_branch = isnt_var(parse_assignment())
 
-        return ast.If(
+        ret = ast.If(
             condition,
             true_branch,
             false_branch
         )
+        ret.location = loc
+        return ret
     
     def parse_while() -> ast.While:
-        consume('while')
+        loc = consume('while').location
         condition = isnt_var(parse_assignment())
 
         consume('do')
         expr = isnt_var(parse_assignment())
 
-        return ast.While(condition, expr)
+        ret = ast.While(condition, expr)
+        ret.location = loc
+        return ret
 
     def parse_var() -> ast.Var:
-        consume('var')
+        loc = consume('var').location
         id = parse_identifier()
 
         consume('=')
         expr = isnt_var(parse_assignment())
 
-        return ast.Var(id, expr)
+        ret = ast.Var(id, expr)
+        ret.location = loc
+        return ret
     
     def parse_function(id: ast.Identifier) -> ast.Function:
         consume('(')
         if peek().text == ')':
             consume(')')
-            return ast.Function(id, [])
+            ret = ast.Function(id, [])
+            ret.location = id.location
+            return ret
         
         args = [isnt_var(parse_assignment())]
         while peek().text != ')':
@@ -160,10 +178,12 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             args.append(isnt_var(parse_assignment()))
         consume(')')
 
-        return ast.Function(
+        ret = ast.Function(
             id,
             args
         )
+        ret.location = id.location
+        return ret
 
     def parse_term() -> ast.Expression:
         if peek().text == '{':
@@ -175,7 +195,6 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         if peek().text == 'while':
             return parse_while()
         if peek().text == 'var':
-            # Raise an error if not parsed in a block
             return parse_var()
         
         term = parse_factor()
@@ -192,7 +211,9 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
             parameter = parse_unary() # Recurse to find the first non-unary token
 
-            return ast.UnaryOp(operator, parameter)
+            ret = ast.UnaryOp(operator, parameter)
+            ret.location = operator_token.location
+            return ret
         
         return parse_term()
 
@@ -229,6 +250,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
                     operator,
                     right
                 )
+                root.location = operator_token.location
             else:
                 if not isinstance(node, ast.BinaryOp): # This should always be true, but the error checker required it
                     raise TypeError('Tried modifying nonexistent child node of operator')
@@ -238,6 +260,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
                     operator,
                     right
                 )
+                node.right.location = operator_token.location
             
             dprint(f'{root}')
 
@@ -256,6 +279,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
                 operator,
                 right
             )
+            left.location = operator_token.location
 
         return left
 

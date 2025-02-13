@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+from compiler.classes import Location, DummyLocation
 
 
 @dataclass
 class Expression:
-    pass
+    location: Location = field(default_factory=lambda: DummyLocation('', -1, -1), init=False)
 
 @dataclass
 class Literal(Expression):
