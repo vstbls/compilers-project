@@ -403,3 +403,13 @@ def test_trailing_tokens() -> None:
     
 def test_var_parsing_fail() -> None:
     assert_parse_fail("if var x = 2 then 1")
+
+def test_optional_semicolons() -> None:
+    parse_string("{ { a } { b } }")
+    assert_parse_fail("{ a b }")
+    parse_string("{ if true then { a } b}")
+    parse_string("{ if true then { a }; b}")
+    assert_parse_fail("{ if true then { a } b c }")
+    parse_string("{ if true then { a } b; c}")
+    parse_string("{ if true then { a } else { b } c }")
+    parse_string("{ { f(a) } { b } }")
