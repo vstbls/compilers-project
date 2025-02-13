@@ -345,7 +345,7 @@ def test_block_parsing() -> None:
     assert parse_string('''
 {
     while f() do {
-        var x = 10;
+        var x: Int = 10;
         var y = if g(x) then {
             x = x + 1;
             x
@@ -362,7 +362,7 @@ def test_block_parsing() -> None:
                 Function(Identifier('f')),
                 Block(
                     [
-                        Var(Identifier('x'), Literal(10)),
+                        Var(Identifier('x'), Literal(10), 'Int'),
                         Var(
                             Identifier('y'),
                             If(

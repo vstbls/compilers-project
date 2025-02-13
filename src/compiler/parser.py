@@ -156,11 +156,19 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     def parse_var() -> ast.Var:
         loc = consume('var').location
         id = parse_identifier()
+        
+        var_type = None
+        if peek().text == ':':
+            consume(':')
+            type_token = consume()
+            var_type = type_token.text
+            if var_type not in ['Int', 'Bool', 'Unit']:
+                raise TypeError(f'{type_token.location}: unrecognized type "{var_type}"')
 
         consume('=')
         expr = isnt_var(parse_assignment())
 
-        ret = ast.Var(id, expr)
+        ret = ast.Var(id, expr, var_type)
         ret.location = loc
         return ret
     

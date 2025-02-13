@@ -50,3 +50,4 @@ class While(Expression):
 class Var(Expression):
     id: Identifier
     expr: Expression
+    type: None | str = None
