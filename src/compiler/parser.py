@@ -4,6 +4,7 @@ import compiler.ast as ast
 
 def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     pos = 0
+    prev_token = tokens[0]
 
     def dprint(s: str) -> None:
         if debug: print(s)
@@ -47,7 +48,9 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             comma_separated = ", ".join(f'"{e}"' for e in expected)
             raise ValueError(f'{token.location} expected one of: {comma_separated}')
         nonlocal pos
+        nonlocal prev_token
         pos += 1
+        prev_token = token
         return token
     
     def parse_parenthesized() -> ast.UnaryOp:
@@ -85,18 +88,23 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             raise TypeError(f'{peek().location}: expected an integer or boolean literal or identifier')
 
     def parse_block() -> ast.Block:
+        nonlocal prev_token
         consume('{')
 
         expressions = []
         result = None
         while peek().text != '}':
             expr = parse_assignment()
-            if peek().text == ';':
-                consume(';')
+            if prev_token.text == '}' or peek().text == ';':
+                if peek().text == ';':
+                    consume(';')
                 expressions.append(expr)
             else:
                 result = expr
                 break
+
+        if prev_token.text == '}':
+            result = expressions.pop()
 
         if peek().text != '}':
             raise ValueError(f'{peek().location} expected end of block after result expression')

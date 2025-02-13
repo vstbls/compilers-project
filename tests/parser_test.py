@@ -400,3 +400,6 @@ def test_trailing_tokens() -> None:
     assert_parse_fail("* 2")
     assert_parse_fail("1 2 3 4")
     assert_parse_fail("fun())")
+    
+def test_var_parsing_fail() -> None:
+    assert_parse_fail("if var x = 2 then 1")
