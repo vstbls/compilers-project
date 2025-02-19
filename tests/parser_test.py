@@ -351,7 +351,7 @@ def test_block_parsing() -> None:
             x
         } else {
             g(x)
-        };  # <-- (this semicolon will become optional later)
+        }  # <-- (this semicolon will become optional later)
         g(y);
     };  # <------ (this too)
     123
