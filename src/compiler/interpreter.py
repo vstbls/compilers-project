@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Callable
 from compiler import ast
 import operator
 
@@ -101,7 +101,7 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
             
         case ast.Function():
             func: Any = symtab.get(node.id.name)
-            if isinstance(func, function):
+            if callable(func):
                 args: list[Value] = [interpret(arg) for arg in node.args]
                 return func(*args) # type: ignore
             raise ValueError(f'{node.location}: undefined function "{node.id}"')
