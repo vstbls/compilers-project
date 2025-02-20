@@ -34,10 +34,13 @@ class SymTab():
         self.locals[key] = val
         if self.debug: print(f'd set {key}: {val}')
         
+def read_int() -> int:
+    return int(input())
+
 default_symtab: SymTab = SymTab(None, {
     'print_int': print,
     'print_bool': print,
-    'read_int': input,
+    'read_int': read_int,
     '+': operator.add,
     '-': operator.sub,
     '*': operator.mul,
