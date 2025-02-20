@@ -118,7 +118,7 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
             return None
             
         case ast.While():
-            while node.condition:
+            while interpret(node.condition, symtab):
                 interpret(node.expr, symtab)
             return None
         
