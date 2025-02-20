@@ -33,7 +33,7 @@ class If(Expression):
 
 @dataclass
 class Function(Expression):
-    name: Identifier
+    id: Identifier
     args: list[Expression] = field(default_factory=list)
 
 @dataclass

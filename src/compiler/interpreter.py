@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any
 from compiler import ast
 import operator
@@ -5,24 +6,33 @@ import operator
 type Value = int | bool | function | None
 
 class SymTab():
-    parent: None | 'SymTab'
+    parent: None | SymTab
     locals: dict[str, Value]
+    debug = False
     
     def __init__(self, p: 'SymTab' | None = None, d: dict[str, Value] | None = None):
         if p is not None:
             self.parent = p
+        else:
+            self.parent = None
         if d is not None:
             self.locals = d
+        else:
+            self.locals = {}
     
     def get(self, key: str) -> Value | None:
         if key in self.locals:
+            if self.debug: print(f'd found {key}:{self.locals[key]} in symtab')
             return self.locals[key]
         elif self.parent is not None:
+            if self.debug: print(f'd {key} not in symtab, checking parent')
             return self.parent.get(key)
+        if self.debug: print(f"d {key} not in any symtab")
         return None
     
-    def set(self, key: str, val: Value):
+    def set(self, key: str, val: Value) -> None:
         self.locals[key] = val
+        if self.debug: print(f'd set {key}: {val}')
         
 default_symtab: SymTab = SymTab(None, {
     'print_int': print,
@@ -64,14 +74,19 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
                         raise ValueError(f'{node.location}: undefined variable "{a.name}"')
                     symtab.set(key, b)
                     return b
+            op: Any = symtab.get(node.op)
+            if op is None:
+                raise ValueError(f'{node.location}: undefined operator {node.op}')
+            return op(a, b)
         
         case ast.UnaryOp():
             if node.op == 'not':
                 return not interpret(node.param, symtab)
             if node.op == '-':
                 param = interpret(node.param, symtab)
-                if param is not None:
+                if isinstance(param, int):
                     return -param
+                raise TypeError(f'{node.param.location}: expected an integer')
             if node.op == '()':
                 return interpret(node.param, symtab)
         
@@ -85,18 +100,18 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
                     return None
             
         case ast.Function():
-            func: function = symtab.get(node.name)
-            if func is None:
-                raise ValueError(f'{node.location}: undefined function "{node.name}"')
-            args: list[Value] = [interpret(arg) for arg in node.args]
-            return func(*args)
+            func: Any = symtab.get(node.id.name)
+            if isinstance(func, function):
+                args: list[Value] = [interpret(arg) for arg in node.args]
+                return func(*args) # type: ignore
+            raise ValueError(f'{node.location}: undefined function "{node.id}"')
         
         case ast.Block():
             block_st = SymTab(symtab)
             for expr in node.exprs:
                 interpret(expr, block_st)
             if node.res is not None:
-                return interpret(node.res)
+                return interpret(node.res, block_st)
             return None
             
         case ast.While():
