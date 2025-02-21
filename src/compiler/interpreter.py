@@ -31,7 +31,10 @@ class SymTab():
         return None
     
     def set(self, key: str, val: Value) -> None:
-        self.locals[key] = val
+        if self.get(key) is None or key in self.locals:
+            self.locals[key] = val
+        else:
+            self.parent.set(key, val)
         if self.debug: print(f'd set {key}: {val}')
         
 def read_int() -> int:
@@ -94,7 +97,7 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
                 return interpret(node.param, symtab)
         
         case ast.If():
-            if interpret(node.condition):
+            if interpret(node.condition, symtab):
                 return interpret(node.true_branch, symtab)
             else:
                 if node.false_branch is not None:
@@ -105,7 +108,7 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
         case ast.Function():
             func: Any = symtab.get(node.id.name)
             if callable(func):
-                args: list[Value] = [interpret(arg) for arg in node.args]
+                args: list[Value] = [interpret(arg, symtab) for arg in node.args]
                 return func(*args) # type: ignore
             raise ValueError(f'{node.location}: undefined function "{node.id}"')
         
