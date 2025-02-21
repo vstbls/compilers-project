@@ -33,7 +33,7 @@ class SymTab():
     def set(self, key: str, val: Value) -> None:
         if self.get(key) is None or key in self.locals:
             self.locals[key] = val
-        else:
+        elif self.parent is not None:
             self.parent.set(key, val)
         if self.debug: print(f'd set {key}: {val}')
         
