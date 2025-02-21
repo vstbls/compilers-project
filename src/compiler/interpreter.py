@@ -40,6 +40,12 @@ class SymTab():
 def read_int() -> int:
     return int(input())
 
+def and_op(a: bool, b: bool) -> bool:
+    return a and b
+
+def or_op(a: bool, b: bool) -> bool:
+    return a or b
+
 default_symtab: SymTab = SymTab(None, {
     'print_int': print,
     'print_bool': print,
@@ -55,6 +61,8 @@ default_symtab: SymTab = SymTab(None, {
     '!=': operator.ne,
     '<=': operator.le,
     '>=': operator.ge,
+    'and': and_op,
+    'or': or_op,
 })
 
 def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
@@ -70,6 +78,8 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
         
         case ast.BinaryOp():
             a: Any = interpret(node.left, symtab)
+            if node.op == 'and' and a is False: return False
+            if node.op == 'or' and a is True: return True
             b: Any = interpret(node.right, symtab)
             if node.op == '=':
                 if not isinstance(node.left, ast.Identifier):
