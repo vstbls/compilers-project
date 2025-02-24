@@ -79,8 +79,8 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
             return id_type
         
         case ast.BinaryOp():
-            t1 = typecheck(node.left)
-            t2 = typecheck(node.right)
+            t1 = typecheck(node.left, symtab)
+            t2 = typecheck(node.right, symtab)
             if node.op == '=':
                 if not isinstance(node.left, ast.Identifier):
                     raise TypeError(f'{node.location}: left side of assignment isn\'t an identifier')
@@ -98,7 +98,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
             return op.res
         
         case ast.UnaryOp():
-            t = typecheck(node.param)
+            t = typecheck(node.param, symtab)
             if node.op == 'not':
                 check_match(node.location, Bool(), t)
             if node.op == '-':
@@ -106,12 +106,40 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
             return t
         
         case ast.If():
-            check_match(node.location, Bool(), typecheck(node.condition))
-            true_t = typecheck(node.true_branch)
-            false_t = typecheck(node.false_branch)
+            check_match(node.location, Bool(), typecheck(node.condition, symtab))
+            true_t = typecheck(node.true_branch, symtab)
+            if node.false_branch is None:
+                return Unit()
+            false_t = typecheck(node.false_branch, symtab)
             if true_t != false_t:
                 raise TypeError(f'{node.location}: mismatching types in conditional branches ({true_t} and {false_t})')
             return true_t
-            
+        
+        case ast.Function():
+            f: Type | None = symtab.get(node.id.name)
+            if f is None or not isinstance(op, FnType):
+                raise ValueError(f'{node.location}: undefined function "{node.id.name}"')
+            if len(node.args) != len(f.params):
+                raise ValueError(f'{node.location}: function {node.id.name} takes {f.params}, got {len(node.args)}')
+            if f.params != [typecheck(arg, symtab) for arg in node.args]:
+                raise ValueError(f'{node.location}: types of arguments don\'t match parameters')
+            return f.res
+        
+        case ast.Block():
+            block_st = SymTab(symtab)
+            for expr in node.exprs:
+                typecheck(expr, block_st)
+            if node.res is None:
+                return Unit()
+            return typecheck(node.res, block_st)
+
+        case ast.While():
+            typecheck(node.condition)
+            typecheck(node.expr)
+            return Unit()
+        
+        case ast.Var():
+            symtab.set(node.id.name, typecheck(node.expr, symtab))
+            return Unit()
 
     return Unit()
