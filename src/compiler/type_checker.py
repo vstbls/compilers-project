@@ -58,7 +58,7 @@ default_symtab = SymTab(None, {
 })
 
 def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
-    def check_match(where: Location, expected: Type, got: Type):
+    def check_match(where: Location, expected: Type, got: Type) -> None:
         if expected != got:
             raise TypeError(f'{where}: expected type {expected}, got {got}')
     
@@ -117,7 +117,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
         
         case ast.Function():
             f: Type | None = symtab.get(node.id.name)
-            if f is None or not isinstance(op, FnType):
+            if f is None or not isinstance(f, FnType):
                 raise ValueError(f'{node.location}: undefined function "{node.id.name}"')
             if len(node.args) != len(f.params):
                 raise ValueError(f'{node.location}: function {node.id.name} takes {f.params}, got {len(node.args)}')
