@@ -6,17 +6,23 @@ class Type():
 
 @dataclass
 class Int(Type):
-    pass
+    def __str__(self) -> str:
+        return 'Int'
 
 @dataclass
 class Bool(Type):
-    pass
+    def __str__(self) -> str:
+        return 'Bool'
 
 @dataclass
 class Unit(Type):
-    pass
+    def __str__(self) -> str:
+        return 'Unit'
 
 @dataclass
 class FnType(Type):
     params: list[Type]
     res: Type
+    
+    def __str__(self) -> str:
+        return f'({", ".join(map(str, self.params))}) => {self.res}'
