@@ -21,7 +21,7 @@ def test_type_checking() -> None:
         x = x = 5;
         x = 5 * 5 + 5 / 5 + (x = 5);
         x = 5;
-        var y = -x;
+        var y: Int = -x;
         if not true == false != false and 5 == x then
             (x + y)
         else

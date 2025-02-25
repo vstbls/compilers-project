@@ -2,6 +2,7 @@ from compiler.parser import parse
 from compiler.tokenizer import tokenize
 import compiler.ast as ast
 from compiler.ast import *
+from compiler.types import *
 
 def parse_string(s: str) -> ast.Expression: return parse(tokenize(s))
 
@@ -362,7 +363,7 @@ def test_block_parsing() -> None:
                 Function(Identifier('f')),
                 Block(
                     [
-                        Var(Identifier('x'), Literal(10), 'Int'),
+                        Var(Identifier('x'), Literal(10), Int()),
                         Var(
                             Identifier('y'),
                             If(

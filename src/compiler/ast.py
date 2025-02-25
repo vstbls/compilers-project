@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from compiler.classes import Location, DummyLocation
+from compiler.types import Type
 
 
 @dataclass
@@ -50,4 +51,4 @@ class While(Expression):
 class Var(Expression):
     id: Identifier
     expr: Expression
-    type: None | str = None
+    type: None | Type = None

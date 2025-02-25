@@ -63,7 +63,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
     match node:
         case ast.Literal():
             match node.value:
-                case bool():
+                case bool(): # Check bool first because apparently bool is a subclass of int
                     return Bool()
                 case int():
                     return Int()
@@ -141,7 +141,10 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
             return Unit()
         
         case ast.Var():
-            symtab.set(node.id.name, typecheck(node.expr, symtab))
+            t = typecheck(node.expr, symtab)
+            if node.type and node.type != t:
+                raise TypeError(f'{node.location}: mismatch between declared type ({node.type}) and actual type ({t})')
+            symtab.set(node.id.name, t)
             return Unit()
 
     return Unit()

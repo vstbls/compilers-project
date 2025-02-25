@@ -1,5 +1,6 @@
 from compiler.tokenizer import Token
 import compiler.ast as ast
+from compiler.types import *
 
 
 def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
@@ -157,13 +158,19 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         loc = consume('var').location
         id = parse_identifier()
         
-        var_type = None
+        var_type: Type | None = None
         if peek().text == ':':
             consume(':')
             type_token = consume()
-            var_type = type_token.text
-            if var_type not in ['Int', 'Bool', 'Unit']:
+            if type_token.text not in ['Int', 'Bool', 'Unit']:
                 raise TypeError(f'{type_token.location}: unrecognized type "{var_type}"')
+            match type_token.text:
+                case 'Int':
+                    var_type = Int()
+                case 'Bool':
+                    var_type = Bool()
+                case 'Unit':
+                    var_type = Unit()
 
         consume('=')
         expr = isnt_var(parse_assignment())
