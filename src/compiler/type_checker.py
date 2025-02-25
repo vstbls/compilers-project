@@ -49,8 +49,6 @@ default_symtab = SymTab(None, {
     '%': FnType([Int(), Int()], Int()),
     '<': FnType([Int(), Int()], Bool()),
     '>': FnType([Int(), Int()], Bool()),
-    '==': FnType([Int(), Int()], Bool()),
-    '!=': FnType([Int(), Int()], Bool()),
     '<=': FnType([Int(), Int()], Bool()),
     '>=': FnType([Int(), Int()], Bool()),
     'and': FnType([Bool(), Bool()], Bool()),
@@ -65,10 +63,10 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
     match node:
         case ast.Literal():
             match node.value:
-                case int():
-                    return Int()
                 case bool():
                     return Bool()
+                case int():
+                    return Int()
                 case None:
                     return Unit()
         
@@ -81,6 +79,10 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
         case ast.BinaryOp():
             t1 = typecheck(node.left, symtab)
             t2 = typecheck(node.right, symtab)
+            if node.op in ['==', '!=']:
+                if t1 != t2:
+                    raise TypeError(f'{node.location}: comparison\'s types mismatch (got {t1} and {t2})')
+                return Bool()
             if node.op == '=':
                 if not isinstance(node.left, ast.Identifier):
                     raise TypeError(f'{node.location}: left side of assignment isn\'t an identifier')

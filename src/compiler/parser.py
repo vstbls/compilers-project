@@ -115,7 +115,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             result = expressions.pop()
 
         if peek().text != '}':
-            raise ValueError(f'{peek().location} expected end of block after result expression')
+            raise ValueError(f'{peek().location} expected end of block after result expression (are you missing a semicolon?)')
         consume('}')
         
         ret = ast.Block(expressions, result)
