@@ -158,8 +158,10 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         loc = consume('var').location
         id = parse_identifier()
         
-        var_type: Type | None = None
+        var_type: Type = Unit()
+        typed = False
         if peek().text == ':':
+            typed = True
             consume(':')
             type_token = consume()
             if type_token.text not in ['Int', 'Bool', 'Unit']:
@@ -169,13 +171,12 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
                     var_type = Int()
                 case 'Bool':
                     var_type = Bool()
-                case 'Unit':
-                    var_type = Unit()
 
         consume('=')
         expr = isnt_var(parse_assignment())
 
-        ret = ast.Var(id, expr, var_type)
+        ret = ast.Var(id, expr, typed)
+        ret.type = var_type
         ret.location = loc
         return ret
     

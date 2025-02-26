@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 from compiler.classes import Location, DummyLocation
-from compiler.types import Type
+from compiler.types import Type, Unit
 
 
 @dataclass
 class Expression:
     location: Location = field(default_factory=lambda: DummyLocation('', -1, -1), init=False)
+    type: Type = field(kw_only=True, default_factory=lambda: Unit(), compare=False)
 
 @dataclass
 class Literal(Expression):
@@ -51,4 +52,4 @@ class While(Expression):
 class Var(Expression):
     id: Identifier
     expr: Expression
-    type: None | Type = None
+    typed: bool = False

@@ -363,7 +363,7 @@ def test_block_parsing() -> None:
                 Function(Identifier('f')),
                 Block(
                     [
-                        Var(Identifier('x'), Literal(10), Int()),
+                        Var(Identifier('x'), Literal(10), True),
                         Var(
                             Identifier('y'),
                             If(
