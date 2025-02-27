@@ -1,41 +1,10 @@
 from __future__ import annotations
 from typing import Any, Callable
 from compiler import ast
+from compiler.symtab import SymTab
 import operator
 
 type Value = int | bool | function | None
-
-class SymTab():
-    parent: None | SymTab
-    locals: dict[str, Value]
-    debug = False
-    
-    def __init__(self, p: 'SymTab' | None = None, d: dict[str, Value] | None = None):
-        if p is not None:
-            self.parent = p
-        else:
-            self.parent = None
-        if d is not None:
-            self.locals = d
-        else:
-            self.locals = {}
-    
-    def get(self, key: str) -> Value | None:
-        if key in self.locals:
-            if self.debug: print(f'd found {key}:{self.locals[key]} in symtab')
-            return self.locals[key]
-        elif self.parent is not None:
-            if self.debug: print(f'd {key} not in symtab, checking parent')
-            return self.parent.get(key)
-        if self.debug: print(f"d {key} not in any symtab")
-        return None
-    
-    def set(self, key: str, val: Value) -> None:
-        if self.get(key) is None or key in self.locals:
-            self.locals[key] = val
-        elif self.parent is not None:
-            self.parent.set(key, val)
-        if self.debug: print(f'd set {key}: {val}')
         
 def read_int() -> int:
     return int(input())
@@ -46,7 +15,7 @@ def and_op(a: bool, b: bool) -> bool:
 def or_op(a: bool, b: bool) -> bool:
     return a or b
 
-default_symtab: SymTab = SymTab(None, {
+default_symtab: SymTab = SymTab[Value](None, {
     'print_int': print,
     'print_bool': print,
     'read_int': read_int,
@@ -123,7 +92,7 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
             raise ValueError(f'{node.location}: undefined function "{node.id}"')
         
         case ast.Block():
-            block_st = SymTab(symtab)
+            block_st = SymTab[Value](symtab)
             for expr in node.exprs:
                 interpret(expr, block_st)
             if node.res is not None:

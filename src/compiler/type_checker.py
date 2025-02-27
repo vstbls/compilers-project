@@ -2,43 +2,9 @@ from __future__ import annotations
 import compiler.ast as ast
 from compiler.types import *
 from compiler.classes import Location
-
-class SymTab():
-    parent: None | SymTab
-    locals: dict[str, Type]
-    debug = False
-
-    def dprint(self, s: str) -> None:
-        if self.debug: print(s)
-    
-    def __init__(self, p: SymTab | None = None, d: dict[str, Type] | None = None):
-        if p is not None:
-            self.parent = p
-        else:
-            self.parent = None
-        if d is not None:
-            self.locals = d
-        else:
-            self.locals = {}
-    
-    def get(self, key: str) -> Type | None:
-        if key in self.locals:
-            self.dprint(f'd found {key}:{self.locals[key]} in symtab')
-            return self.locals[key]
-        elif self.parent is not None:
-            self.dprint(f'd {key} not in symtab, checking parent')
-            return self.parent.get(key)
-        self.dprint(f"d {key} not in any symtab")
-        return None
-    
-    def set(self, key: str, type: Type) -> None:
-        if self.get(key) is None or key in self.locals:
-            self.locals[key] = type
-        elif self.parent is not None:
-            self.parent.set(key, type)
-        self.dprint(f'd set {key}: {type}')
+from compiler.symtab import SymTab
         
-default_symtab = SymTab(None, {
+default_symtab = SymTab[Type](None, {
     'print_int': FnType([Int()], Unit()),
     'print_bool': FnType([Bool()], Unit()),
     'read_int': FnType([], Int()),
@@ -129,7 +95,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
                 return f.res
             
             case ast.Block():
-                block_st = SymTab(symtab)
+                block_st = SymTab[Type](symtab)
                 for expr in node.exprs:
                     typecheck(expr, block_st)
                 if node.res is None:
