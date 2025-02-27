@@ -1,7 +1,6 @@
 from compiler import ast, ir
 from compiler.symtab import SymTab
 from compiler.types import Bool, Int, Type, Unit
-from compiler.builtins import builtin_function_types
 
 def generate_ir(
         root_types: dict[ir.IRVar, Type],
@@ -12,6 +11,12 @@ def generate_ir(
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit()
 
+    # var_prefix used as the prefix for all variables
+    # while loop ensures it doesn't collide with variables declared in root_types
+    var_prefix = '_x'
+    while ir.IRVar(var_prefix) in root_types.keys():
+        var_prefix = '_' + var_prefix
+    
     def new_var(t: Type) -> ir.IRVar:
         return ir.IRVar('')
 
