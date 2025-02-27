@@ -3,23 +3,9 @@ import compiler.ast as ast
 from compiler.types import *
 from compiler.classes import Location
 from compiler.symtab import SymTab
+from compiler.builtins import builtin_function_types
         
-default_symtab = SymTab[Type](None, {
-    'print_int': FnType([Int()], Unit()),
-    'print_bool': FnType([Bool()], Unit()),
-    'read_int': FnType([], Int()),
-    '+': FnType([Int(), Int()], Int()),
-    '-': FnType([Int(), Int()], Int()),
-    '*': FnType([Int(), Int()], Int()),
-    '/': FnType([Int(), Int()], Int()),
-    '%': FnType([Int(), Int()], Int()),
-    '<': FnType([Int(), Int()], Bool()),
-    '>': FnType([Int(), Int()], Bool()),
-    '<=': FnType([Int(), Int()], Bool()),
-    '>=': FnType([Int(), Int()], Bool()),
-    'and': FnType([Bool(), Bool()], Bool()),
-    'or': FnType([Bool(), Bool()], Bool()),
-})
+default_symtab = SymTab[Type](None, builtin_function_types)
 
 def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
     def check_match(where: Location, expected: Type, got: Type) -> None:
