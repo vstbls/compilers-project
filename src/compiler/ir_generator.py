@@ -53,6 +53,7 @@ def generate_ir(
                         var = var_unit
                     case _:
                         raise TypeError(f'{loc}: unsupported literal: {type(expr.value)}')
+                return var
             
             case ast.Identifier():
                 return st.require(expr.name)
@@ -69,7 +70,7 @@ def generate_ir(
                     loc, var_op, [var_left, var_right], var_result
                 ))
                 return var_result
-                
+
             case ast.If():
                 l_then = new_label()
                 l_end = new_label()
