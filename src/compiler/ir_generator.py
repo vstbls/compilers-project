@@ -68,6 +68,9 @@ def generate_ir(
                     ))
                     return var_unit
                 
+                if expr.op in ['==', '!=']:
+                    pass # Not sure how to implement these yet
+
                 var_op = st.require(expr.op)
 
                 var_left = visit(st, expr.left)
@@ -77,6 +80,17 @@ def generate_ir(
 
                 ins.append(ir.Call(
                     loc, var_op, [var_left, var_right], var_result
+                ))
+                return var_result
+            
+            case ast.UnaryOp():
+                var_param = visit(st, expr.param)
+                if expr.op == '()':
+                    return var_param # Just return the variable of the expression inside the parentheses
+                
+                var_result = new_var(expr.type)
+                ins.append(ir.Call(
+                    loc, ir.IRVar(expr.op), [var_param], var_result
                 ))
                 return var_result
 
