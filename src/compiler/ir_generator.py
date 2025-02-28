@@ -59,6 +59,15 @@ def generate_ir(
                 return st.require(expr.name)
             
             case ast.BinaryOp():
+                if expr.op == '=':
+                    var_left = visit(st, expr.left)
+                    var_right = visit(st, expr.right)
+
+                    ins.append(ir.Copy(
+                        loc, var_left, var_right
+                    ))
+                    return var_unit
+                
                 var_op = st.require(expr.op)
 
                 var_left = visit(st, expr.left)
