@@ -20,5 +20,5 @@ builtin_function_types: dict[str, Type] = {
 
 builtin_var_types: dict[ir.IRVar, Type] = {
     ir.IRVar(f): t
-    for (f, t) in builtin_function_types
+    for (f, t) in builtin_function_types.items()
 }

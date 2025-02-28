@@ -2,7 +2,7 @@ from compiler.tokenizer import tokenize
 from compiler.classes import *
 
 def test_tokenizer_basics() -> None:
-    L = DummyLocation('', 0, 0) # Dummy location that always evaluates to 'True' on comparison
+    L = DummyLocation() # Dummy location that always evaluates to 'True' on comparison
     assert tokenize('test')[0].location == L
     assert tokenize("a + 5") == [
         Token('a', 'identifier', L),

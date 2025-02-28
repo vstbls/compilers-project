@@ -5,7 +5,7 @@ from compiler.types import Type, Unit
 
 @dataclass
 class Expression:
-    location: Location = field(default_factory=lambda: DummyLocation('', -1, -1), init=False)
+    location: Location = field(default_factory=lambda: DummyLocation(), init=False)
     type: Type = field(kw_only=True, default_factory=lambda: Unit(), compare=False)
 
 @dataclass

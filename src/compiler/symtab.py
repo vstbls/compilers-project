@@ -31,6 +31,12 @@ class SymTab(Generic[T]):
         self.dprint(f"d {key} not in any symtab")
         return None
     
+    def require(self, key: str) -> T:
+        res = self.get(key)
+        if not res:
+            raise Exception(f'{key} not found in symbol table {type(self)}')
+        return res
+    
     def set(self, key: str, val: T) -> None:
         if self.get(key) is None or key in self.locals:
             self.locals[key] = val
