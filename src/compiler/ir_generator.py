@@ -100,6 +100,8 @@ def generate_ir(
                     
                 var_cond = visit(st, expr.condition)
                 
+                var_result = var_unit
+                
                 if not expr.false_branch:
                     ins.append(ir.CondJump(
                         loc, var_cond, l_then, l_end
@@ -109,6 +111,8 @@ def generate_ir(
 
                     visit(st, expr.true_branch)
                 else:
+                    var_result = new_var(expr.type)
+                    
                     l_else = new_label()
                     
                     ins.append(ir.CondJump(
@@ -116,13 +120,19 @@ def generate_ir(
                     ))
                     
                     ins.append(l_then)
-                    visit(st, expr.true_branch)
+                    var_then = visit(st, expr.true_branch)
+                    ins.append(ir.Copy(
+                        loc, var_then, var_result
+                    ))
                     ins.append(ir.Jump(
                         loc, l_end
                     ))
                     
                     ins.append(l_else)
-                    visit(st, expr.false_branch)
+                    var_else = visit(st, expr.false_branch)
+                    ins.append(ir.Copy(
+                        loc, var_else, var_result
+                    ))
                     
                 ins.append(l_end)
                 return var_unit
@@ -151,6 +161,7 @@ def generate_ir(
                 ins.append(l_end)
                 
                 return var_unit
+        return var_unit
 
     root_symtab = SymTab[ir.IRVar]()
     for v in root_types.keys():

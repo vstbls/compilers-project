@@ -42,7 +42,7 @@ class LoadBoolConst(Instruction):
 
 @dataclass(frozen=True)
 class LoadIntConst(Instruction):
-    value: bool
+    value: int
     dest: IRVar
 
 
