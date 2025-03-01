@@ -126,6 +126,31 @@ def generate_ir(
                     
                 ins.append(l_end)
                 return var_unit
+            
+            case ast.While():
+                l_loop = new_label()
+                l_start = new_label()
+                l_end = new_label()
+
+                ins.append(l_loop)
+                
+                var_cond = visit(st, expr.condition)
+                
+                ins.append(ir.CondJump(
+                    loc, var_cond, l_start, l_end
+                ))
+                
+                ins.append(l_start)
+
+                visit(st, expr.expr)
+                
+                ins.append(ir.Jump(
+                    loc, l_loop
+                ))
+
+                ins.append(l_end)
+                
+                return var_unit
 
     root_symtab = SymTab[ir.IRVar]()
     for v in root_types.keys():
