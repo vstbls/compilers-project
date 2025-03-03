@@ -18,4 +18,4 @@ def toast(s: str) -> ast.Expression:
     typecheck(e) # Need to perform type checking after parsing to apply types to all nodes
     return e
 
-s = '1 + 2 * 3'
+print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))

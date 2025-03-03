@@ -99,7 +99,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
                 t = typecheck(node.expr, symtab)
                 if node.typed and node.type != t:
                     raise TypeError(f'{node.location}: mismatch between declared type ({node.type}) and actual type ({t})')
-                symtab.set(node.id.name, t)
+                symtab.define(node.id.name, t)
                 return Unit()
 
         return Unit()

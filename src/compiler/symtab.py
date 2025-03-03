@@ -40,6 +40,11 @@ class SymTab(Generic[T]):
             raise Exception(f'{key} not found in symbol table {type(self)}')
         return res
     
+    def define(self, key: str, val: T) -> None:
+        if key in self.locals:
+            raise ValueError(f'Tried to define "{key}" in symbol table, even though it is already defined in this scope')
+        self.locals[key] = val
+    
     def set(self, key: str, val: T) -> None:
         if self.get(key) is None or key in self.locals:
             self.locals[key] = val

@@ -22,9 +22,9 @@ def generate_ir(
     def new_var(t: Type) -> ir.IRVar:
         nonlocal var_counter
         var_counter += 1
-        new_var = ir.IRVar(f'{var_prefix}{var_counter}')
-        var_types[new_var] = t
-        return new_var
+        var_new = ir.IRVar(f'{var_prefix}{var_counter}')
+        var_types[var_new] = t
+        return var_new
     
     label_counter = 0
     def new_label() -> ir.Label:
@@ -61,14 +61,14 @@ def generate_ir(
             case ast.BinaryOp():
                 var_left = visit(st, expr.left)
                 var_right = visit(st, expr.right)
-
-                var_result = new_var(expr.type)
                 
                 if expr.op == '=':
                     ins.append(ir.Copy(
-                        loc, var_left, var_right
+                        loc, var_right, var_left
                     ))
-                    return var_unit
+                    return var_left
+
+                var_result = new_var(expr.type)
                 
                 if expr.op in ['==', '!=']: # funny special cases
                     var_op = ir.IRVar(expr.op)
@@ -136,7 +136,7 @@ def generate_ir(
             
             case ast.Function():
                 var_f = st.require(expr.id.name)
-                var_args = [visit(arg) for arg in expr.args]
+                var_args = [visit(st, arg) for arg in expr.args]
                 var_result = new_var(expr.type)
                 ins.append(ir.Call(
                     loc, var_f, var_args, var_result
@@ -149,7 +149,7 @@ def generate_ir(
                     visit(block_st, e)
                 if not expr.res: # Block doesn't have a return expression
                     return var_unit
-                return visit(st, expr.res)
+                return visit(block_st, expr.res)
             
             case ast.While():
                 l_loop = new_label()
@@ -178,8 +178,8 @@ def generate_ir(
             
             case ast.Var():
                 var_expr = visit(st, expr.expr)
-                var_result = new_var(expr.type)
-                st.set(expr.id.name, var_result)
+                var_result = new_var(expr.expr.type)
+                st.define(expr.id.name, var_result)
                 ins.append(ir.Copy(
                     loc, var_expr, var_result
                 ))
@@ -192,10 +192,14 @@ def generate_ir(
         root_symtab.set(v.name, v)
 
     var_final = visit(root_symtab, root_expr)
-
-    if var_types[var_final] == Int:
-        pass
-    elif var_types[var_final] == Bool:
-        pass
+    
+    if var_types[var_final] == Int():
+        ins.append(ir.Call(
+            root_expr.location, root_symtab.require('print_int'), [var_final], var_unit
+        ))
+    elif var_types[var_final] == Bool():
+        ins.append(ir.Call(
+            root_expr.location, root_symtab.require('print_bool'), [var_final], var_unit
+        ))
 
     return ins
