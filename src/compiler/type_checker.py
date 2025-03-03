@@ -89,8 +89,8 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
                 return typecheck(node.res, block_st)
 
             case ast.While():
-                typecheck(node.condition)
-                typecheck(node.expr)
+                typecheck(node.condition, symtab)
+                typecheck(node.expr, symtab)
                 return Unit()
             
             case ast.Var():

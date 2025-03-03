@@ -190,6 +190,8 @@ def generate_ir(
     root_symtab = SymTab[ir.IRVar]()
     for v in root_types.keys():
         root_symtab.set(v.name, v)
+        
+    ins.append(ir.Label(DummyLocation(), 'start'))
 
     var_final = visit(root_symtab, root_expr)
     
