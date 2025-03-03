@@ -59,24 +59,21 @@ def generate_ir(
                 return st.require(expr.name)
             
             case ast.BinaryOp():
-                if expr.op == '=':
-                    var_left = visit(st, expr.left)
-                    var_right = visit(st, expr.right)
+                var_left = visit(st, expr.left)
+                var_right = visit(st, expr.right)
 
+                var_result = new_var(expr.type)
+                
+                if expr.op == '=':
                     ins.append(ir.Copy(
                         loc, var_left, var_right
                     ))
                     return var_unit
                 
-                if expr.op in ['==', '!=']:
-                    pass # Not sure how to implement these yet
-
-                var_op = st.require(expr.op)
-
-                var_left = visit(st, expr.left)
-                var_right = visit(st, expr.right)
-
-                var_result = new_var(expr.type)
+                if expr.op in ['==', '!=']: # funny special cases
+                    var_op = ir.IRVar(expr.op)
+                else:
+                    var_op = st.require(expr.op)
 
                 ins.append(ir.Call(
                     loc, var_op, [var_left, var_right], var_result
@@ -137,6 +134,23 @@ def generate_ir(
                 ins.append(l_end)
                 return var_unit
             
+            case ast.Function():
+                var_f = st.require(expr.id.name)
+                var_args = [visit(arg) for arg in expr.args]
+                var_result = new_var(expr.type)
+                ins.append(ir.Call(
+                    loc, var_f, var_args, var_result
+                ))
+                return var_result
+            
+            case ast.Block():
+                block_st = SymTab[ir.IRVar](st)
+                for e in expr.exprs:
+                    visit(block_st, e)
+                if not expr.res: # Block doesn't have a return expression
+                    return var_unit
+                return visit(st, expr.res)
+            
             case ast.While():
                 l_loop = new_label()
                 l_start = new_label()
@@ -161,6 +175,16 @@ def generate_ir(
                 ins.append(l_end)
                 
                 return var_unit
+            
+            case ast.Var():
+                var_expr = visit(st, expr.expr)
+                var_result = new_var(expr.type)
+                st.set(expr.id.name, var_result)
+                ins.append(ir.Copy(
+                    loc, var_expr, var_result
+                ))
+                return var_result
+                
         return var_unit
 
     root_symtab = SymTab[ir.IRVar]()

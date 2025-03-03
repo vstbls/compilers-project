@@ -94,6 +94,8 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
                 return Unit()
             
             case ast.Var():
+                if symtab.is_in_scope(node.id.name):
+                    raise ValueError(f'{node.location}: Variable "{node.id.name}" already declared in scope')
                 t = typecheck(node.expr, symtab)
                 if node.typed and node.type != t:
                     raise TypeError(f'{node.location}: mismatch between declared type ({node.type}) and actual type ({t})')

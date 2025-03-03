@@ -31,6 +31,9 @@ class SymTab(Generic[T]):
         self.dprint(f"d {key} not in any symtab")
         return None
     
+    def is_in_scope(self, key: str) -> bool:
+        return key in self.locals
+    
     def require(self, key: str) -> T:
         res = self.get(key)
         if not res:
