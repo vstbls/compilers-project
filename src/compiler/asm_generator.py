@@ -87,8 +87,8 @@ main:
             case ir.CondJump():
                 emit(f'\tmovq {locals.get_ref(insn.cond)}, %rax')
                 emit(f'\tcmpq $0, %rax') # 1 if %rax == 0, 0 otherwise (%rax > 0). Stored in EFLAGS (not sure what that is)
-                emit(f'\tjne .L{insn.else_label.name}') # %rax == 0 -> Comparison was false
-                emit(f'\tjmp .L{insn.then_label.name}') # %rax != 0 -> Comparison was true
+                emit(f'\tjne .L{insn.then_label.name}') # %rax != 0 -> Comparison was true
+                emit(f'\tjmp .L{insn.else_label.name}') # %rax == 0 -> Comparison was false
 
             case ir.Jump():
                 emit(f'\tjmp .L{insn.label.name}')
@@ -96,7 +96,7 @@ main:
             case ir.Call():
                 f_name = insn.fun.name
                 if f_name in intrinsics.all_intrinsics:
-                    return intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
+                    intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
                         arg_refs=[locals.get_ref(arg) for arg in insn.args],
                         result_register='%rax',
                         emit=emit

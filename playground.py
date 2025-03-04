@@ -3,7 +3,7 @@ sys.path.append('src')
 from compiler.tokenizer import tokenize
 from compiler.parser import parse
 from compiler.type_checker import typecheck
-from compiler import ast, builtins
+from compiler import ast, builtins, assembler
 import compiler.ir_generator as ir
 from compiler.interpreter import interpret, Value
 from compiler.asm_generator import generate_asm
@@ -24,5 +24,8 @@ def asm(s: str) -> str:
         builtins.builtin_var_types,
         toast(s)
     ))
+
+def compile(s: str, f: str) -> None:
+    assembler.assemble(asm(s), f)
 
 #print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))
