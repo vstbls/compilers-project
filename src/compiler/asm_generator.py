@@ -1,4 +1,4 @@
-from compiler import ir
+from compiler import ir, intrinsics
 import dataclasses
 
 class Locals:
@@ -20,6 +20,8 @@ class Locals:
 def generate_asm(instructions: list[ir.Instruction]) -> str:
     lines = []
     def emit(line: str) -> None: lines.append(line)
+
+    arg_regs = ['%rdi', '%rsi', '%rdx', '%rcx', '%r8', '%r9']
 
     def get_all_ir_variables(instructions: list[ir.Instruction]) -> list[ir.IRVar]:
         result_set: set[ir.IRVar] = set()
@@ -91,9 +93,25 @@ main:
             case ir.Jump():
                 emit(f'\tjmp .L{insn.label.name}')
 
+            case ir.Call():
+                f_name = insn.fun.name
+                if f_name in intrinsics.all_intrinsics:
+                    return intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
+                        arg_refs=[locals.get_ref(arg) for arg in insn.args],
+                        result_register='%rax',
+                        emit=emit
+                    ))
+                else:
+                    if len(insn.args) > 6:
+                        raise Exception('Functions with more than 6 arguments are not supported')
+                    for i in range(len(insn.args)):
+                        emit(f'\tmovq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
+                    emit(f'\ncallq {insn.fun.name}')
+                emit(f'\tmovq %rax, {locals.get_ref(insn.dest)}')
+
     emit("""
 .Lend:
-    movq $-, %rax
+    movq $0, %rax
     movq %rbp, %rsp
     popq %rbp
     ret""")
