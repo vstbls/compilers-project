@@ -6,6 +6,7 @@ from compiler.type_checker import typecheck
 from compiler import ast, builtins
 import compiler.ir_generator as ir
 from compiler.interpreter import interpret, Value
+from compiler.asm_generator import generate_asm
 
 def ps(s: str) -> ast.Expression: return parse(tokenize(s), False)
 def ips(s: str) -> Value: return interpret(ps(s))
@@ -18,4 +19,10 @@ def toast(s: str) -> ast.Expression:
     typecheck(e) # Need to perform type checking after parsing to apply types to all nodes
     return e
 
-print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))
+def asm(s: str) -> str:
+    return generate_asm(ir.generate_ir(
+        builtins.builtin_var_types,
+        toast(s)
+    ))
+
+#print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))
