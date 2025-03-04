@@ -132,7 +132,7 @@ def generate_ir(
                     ))
                     
                 ins.append(l_end)
-                return var_unit
+                return var_result
             
             case ast.Function():
                 var_f = st.require(expr.id.name)
