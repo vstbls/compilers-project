@@ -65,9 +65,9 @@ def interpret(node: ast.Expression, symtab: SymTab = default_symtab) -> Value:
             return op(a, b)
         
         case ast.UnaryOp():
-            if node.op == 'not':
+            if node.op == 'unary_not':
                 return not interpret(node.param, symtab)
-            if node.op == '-':
+            if node.op == 'unary_-':
                 param = interpret(node.param, symtab)
                 if isinstance(param, int):
                     return -param

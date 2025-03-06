@@ -223,7 +223,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     def parse_unary() -> ast.Expression:
         if peek().text in ['-', 'not']:
             operator_token = consume()
-            operator = operator_token.text
+            operator = 'unary_' + operator_token.text
 
             parameter = parse_unary() # Recurse to find the first non-unary token
 

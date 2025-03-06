@@ -54,9 +54,9 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
             
             case ast.UnaryOp():
                 t = typecheck(node.param, symtab)
-                if node.op == 'not':
+                if node.op == 'unary_not':
                     check_match(node.location, Bool(), t)
-                if node.op == '-':
+                if node.op == 'unary_-':
                     check_match(node.location, Int(), t)
                 return t
             

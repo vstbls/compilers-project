@@ -86,8 +86,9 @@ def generate_ir(
                     return var_param # Just return the variable of the expression inside the parentheses
                 
                 var_result = new_var(expr.type)
+                var_op = st.require(expr.op)
                 ins.append(ir.Call(
-                    loc, ir.IRVar(expr.op), [var_param], var_result
+                    loc, var_op, [var_param], var_result
                 ))
                 return var_result
 

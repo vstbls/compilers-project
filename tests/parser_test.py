@@ -209,31 +209,31 @@ def test_conditional_parsing() -> None:
 def test_unary_parsing() -> None:
     assert parse_string("not a + (- bbb5ifnotb)") == BinaryOp(
         UnaryOp(
-            'not',
+            'unary_not',
             Identifier('a')
         ),
         '+',
         UnaryOp(
             '()',
             UnaryOp(
-                '-',
+                'unary_-',
                 Identifier('bbb5ifnotb')
             )
         )
     )
 
     assert parse_string("not not - (- not a)") == UnaryOp(
-        'not',
+        'unary_not',
         UnaryOp(
-            'not',
+            'unary_not',
             UnaryOp(
-                '-',
+                'unary_-',
                 UnaryOp(
                     '()',
                     UnaryOp(
-                        '-',
+                        'unary_-',
                         UnaryOp(
-                            'not',
+                            'unary_not',
                             Identifier('a')
                         )
                     )
@@ -273,7 +273,7 @@ def test_function_parsing() -> None:
                         Identifier('b')
                     ),
                     UnaryOp(
-                        'not',
+                        'unary_not',
                         Identifier('c')
                     )
                 ]

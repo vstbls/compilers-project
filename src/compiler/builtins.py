@@ -16,6 +16,8 @@ builtin_function_types: dict[str, Type] = {
     '>=': FnType([Int(), Int()], Bool()),
     'and': FnType([Bool(), Bool()], Bool()),
     'or': FnType([Bool(), Bool()], Bool()),
+    'unary_-': FnType([Int()], Int()),
+    'unary_not': FnType([Bool()], Bool())
 }
 
 builtin_var_types: dict[ir.IRVar, Type] = {
