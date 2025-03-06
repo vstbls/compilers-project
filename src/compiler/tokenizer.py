@@ -1,7 +1,7 @@
 import re
 from compiler.classes import *
 
-def tokenize(source_code: str) -> list[Token]:
+def tokenize(source_code: str, source_location: str = 'string') -> list[Token]:
     tokens = {
         'comment': re.compile(r'(#|//).*'),
         'bool_literal': re.compile(r'(true|false)'),
@@ -30,7 +30,7 @@ def tokenize(source_code: str) -> list[Token]:
             matched_token = True
             pos = match.end()
             ln, col = index_to_coordinates(source_code, match.start())
-            l = Location('string', ln, col)
+            l = Location(source_location, ln, col)
             t = Token(match.group(0), token, l)
             res.append(t)
         
