@@ -300,6 +300,29 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
         return left
 
     expression = parse_assignment()
+
+    if peek().text == ';':
+        consume(';')
+        expressions = [expression]
+        result_expr = None
+        while pos < len(tokens):
+            next_expr = parse_assignment()
+            if prev_token.text == '}' or peek().text == ';':
+                if peek().text == ';':
+                    consume(';')
+                expressions.append(next_expr)
+            else:
+                result_expr = next_expr
+                break
+
+        if prev_token.text == '}':
+            result_expr = expressions.pop()
+
+        expression = ast.Block(expressions, result_expr)
+
     if pos < len(tokens):
-        raise ValueError(f'{peek().location}: unexpected token')
+        raise ValueError(f'{peek().location}: unexpected token "{peek().text}"')
+    
+    expression.location = tokens[0].location
+
     return expression

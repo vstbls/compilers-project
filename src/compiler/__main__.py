@@ -5,14 +5,20 @@ import sys
 from socketserver import ForkingTCPServer, StreamRequestHandler
 from traceback import format_exception
 from typing import Any
+from compiler import tokenizer, parser, type_checker, ir_generator, builtins, asm_generator, assembler
 
 
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
-    # *** TODO ***
-    # Call your compiler here and return the compiled executable.
-    # Raise an exception on compilation error.
-    # *** TODO ***
-    raise NotImplementedError("Compiler not implemented")
+    tokens = tokenizer.tokenize(source_code, input_file_name)
+    ast = parser.parse(tokens)
+    type_checker.typecheck(ast)
+    ir = ir_generator.generate_ir(builtins.builtin_var_types, ast)
+    asm = asm_generator.generate_asm(ir)
+
+    output_file = 'compiled'
+    assembler.assemble(asm, output_file)
+    with open (output_file, 'rb') as f:
+        return f.read()
 
 
 def main() -> int:
