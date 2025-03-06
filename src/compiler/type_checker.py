@@ -5,9 +5,9 @@ from compiler.classes import Location
 from compiler.symtab import SymTab
 from compiler.builtins import builtin_function_types
         
-default_symtab = SymTab[Type](None, builtin_function_types)
+#default_symtab = SymTab[Type](None, builtin_function_types)
 
-def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
+def typecheck(node: ast.Expression, symtab: SymTab = SymTab[Type](None, builtin_function_types.copy())) -> Type:
     def check_match(where: Location, expected: Type, got: Type) -> None:
         if expected != got:
             raise TypeError(f'{node} at {where}: expected type {expected}, got {got}')
@@ -89,7 +89,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = default_symtab) -> Type:
                 return typecheck(node.res, block_st)
 
             case ast.While():
-                typecheck(node.condition, symtab)
+                check_match(node.location, Bool(), typecheck(node.condition, symtab))
                 typecheck(node.expr, symtab)
                 return Unit()
             
