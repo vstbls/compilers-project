@@ -228,7 +228,7 @@ def generate_ir(
                 ins.append(ir.Copy(
                     loc, var_expr, var_result
                 ))
-                return var_result
+                return var_unit
                 
         return var_unit
 
