@@ -4,6 +4,8 @@ from compiler.classes import *
 def tokenize(source_code: str, source_location: str = 'string') -> list[Token]:
     tokens = {
         'comment': re.compile(r'(#|//).*'),
+        'break': re.compile(r'break'),
+        'continue': re.compile(r'continue'),
         'bool_literal': re.compile(r'(true|false)'),
         'type': re.compile(r'Int|Bool|Unit'),
         'identifier': re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
@@ -22,7 +24,7 @@ def tokenize(source_code: str, source_location: str = 'string') -> list[Token]:
             continue
         
         matched_token = False
-        for token, pattern in tokens.items():
+        for token_type, pattern in tokens.items():
             match = pattern.match(source_code, pos)
             if not match:
                 continue
@@ -31,7 +33,7 @@ def tokenize(source_code: str, source_location: str = 'string') -> list[Token]:
             pos = match.end()
             ln, col = index_to_coordinates(source_code, match.start())
             l = Location(source_location, ln, col)
-            t = Token(match.group(0), token, l)
+            t = Token(match.group(0), token_type, l)
             res.append(t)
         
         if not matched_token:

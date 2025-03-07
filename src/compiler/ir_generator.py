@@ -43,7 +43,7 @@ def generate_ir(
 
     ins: list[ir.Instruction] = []
 
-    def visit(st: SymTab[ir.IRVar], expr: ast.Expression) -> ir.IRVar:
+    def visit(st: SymTab[ir.IRVar], expr: ast.Expression, break_label: None | ir.Label = None, continue_label: None | ir.Label = None) -> ir.IRVar:
         loc = expr.location
         match expr:
             case ast.Literal():
@@ -68,7 +68,7 @@ def generate_ir(
                 return st.require(expr.name)
             
             case ast.BinaryOp():
-                var_left = visit(st, expr.left)
+                var_left = visit(st, expr.left, break_label, continue_label)
 
                 if expr.op in ['and', 'or']:
                     l_right = new_label(f'{expr.op}_right')
@@ -86,7 +86,7 @@ def generate_ir(
 
                     ins.append(l_right)
 
-                    var_right = visit(st, expr.right)
+                    var_right = visit(st, expr.right, break_label, continue_label)
 
                     var_result = new_var(Bool())
 
@@ -104,7 +104,7 @@ def generate_ir(
                     ins.append(l_end)
                     return var_result
 
-                var_right = visit(st, expr.right)
+                var_right = visit(st, expr.right, break_label, continue_label)
                 
                 if expr.op == '=':
                     ins.append(ir.Copy(
@@ -125,7 +125,7 @@ def generate_ir(
                 return var_result
             
             case ast.UnaryOp():
-                var_param = visit(st, expr.param)
+                var_param = visit(st, expr.param, break_label, continue_label)
                 if expr.op == '()':
                     return var_param # Just return the variable of the expression inside the parentheses
                 
@@ -140,7 +140,7 @@ def generate_ir(
                 l_then = new_label('then')
                 l_end = new_label('if_end')
                     
-                var_cond = visit(st, expr.condition)
+                var_cond = visit(st, expr.condition, break_label, continue_label)
                 
                 var_result = var_unit
                 
@@ -151,7 +151,7 @@ def generate_ir(
                     
                     ins.append(l_then)
 
-                    visit(st, expr.true_branch)
+                    visit(st, expr.true_branch, break_label, continue_label)
                 else:
                     var_result = new_var(expr.type)
                     
@@ -162,7 +162,7 @@ def generate_ir(
                     ))
                     
                     ins.append(l_then)
-                    var_then = visit(st, expr.true_branch)
+                    var_then = visit(st, expr.true_branch, break_label, continue_label)
                     ins.append(ir.Copy(
                         loc, var_then, var_result
                     ))
@@ -171,7 +171,7 @@ def generate_ir(
                     ))
                     
                     ins.append(l_else)
-                    var_else = visit(st, expr.false_branch)
+                    var_else = visit(st, expr.false_branch, break_label, continue_label)
                     ins.append(ir.Copy(
                         loc, var_else, var_result
                     ))
@@ -181,7 +181,7 @@ def generate_ir(
             
             case ast.Function():
                 var_f = st.require(expr.id.name)
-                var_args = [visit(st, arg) for arg in expr.args]
+                var_args = [visit(st, arg, break_label, continue_label) for arg in expr.args]
                 var_result = new_var(expr.type)
                 ins.append(ir.Call(
                     loc, var_f, var_args, var_result
@@ -191,10 +191,10 @@ def generate_ir(
             case ast.Block():
                 block_st = SymTab[ir.IRVar](st)
                 for e in expr.exprs:
-                    visit(block_st, e)
+                    visit(block_st, e, break_label, continue_label)
                 if not expr.res: # Block doesn't have a return expression
                     return var_unit
-                return visit(block_st, expr.res)
+                return visit(block_st, expr.res, break_label, continue_label)
             
             case ast.While():
                 l_start = new_label('while_start')
@@ -203,7 +203,7 @@ def generate_ir(
 
                 ins.append(l_start)
                 
-                var_cond = visit(st, expr.condition)
+                var_cond = visit(st, expr.condition, l_end, l_start)
                 
                 ins.append(ir.CondJump(
                     loc, var_cond, l_body, l_end
@@ -211,7 +211,7 @@ def generate_ir(
                 
                 ins.append(l_body)
 
-                visit(st, expr.expr)
+                visit(st, expr.expr, l_end, l_start)
                 
                 ins.append(ir.Jump(
                     loc, l_start
@@ -222,12 +222,24 @@ def generate_ir(
                 return var_unit
             
             case ast.Var():
-                var_expr = visit(st, expr.expr)
+                var_expr = visit(st, expr.expr, break_label, continue_label)
                 var_result = new_var(expr.expr.type)
                 st.define(expr.id.name, var_result)
                 ins.append(ir.Copy(
                     loc, var_expr, var_result
                 ))
+                return var_unit
+
+            case ast.Break():
+                if not break_label:
+                    raise SyntaxError(f'{loc}: break called outside of a loop')
+                ins.append(ir.Jump(loc, break_label))
+                return var_unit
+
+            case ast.Continue():
+                if not continue_label:
+                    raise SyntaxError(f'{loc}: continue called outside of a loop')
+                ins.append(ir.Jump(loc, continue_label))
                 return var_unit
                 
         return var_unit

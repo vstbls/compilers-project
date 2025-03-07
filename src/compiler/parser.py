@@ -212,6 +212,12 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
             return parse_while()
         if peek().text == 'var':
             return parse_var()
+        if peek().text == 'break':
+            consume('break')
+            return ast.Break()
+        if peek().text == 'continue':
+            consume('continue')
+            return ast.Continue()
         
         term = parse_factor()
 

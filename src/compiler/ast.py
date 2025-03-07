@@ -53,3 +53,11 @@ class Var(Expression):
     id: Identifier
     expr: Expression
     typed: bool = False
+
+@dataclass
+class Break(Expression):
+    pass
+
+@dataclass
+class Continue(Expression):
+    pass
