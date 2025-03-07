@@ -301,8 +301,9 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
 
     expression = parse_assignment()
 
-    if peek().text == ';':
-        consume(';')
+    if pos < len(tokens):
+        if peek().text == ';':
+            consume(';')
         expressions = [expression]
         result_expr = None
         while pos < len(tokens):
