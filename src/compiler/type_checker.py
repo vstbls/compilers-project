@@ -43,6 +43,7 @@ def typecheck(node: ast.Expression, symtab: SymTab = SymTab[Type](None, builtin_
                         key = node.left.name
                         if symtab.get(key) is None:
                             raise ValueError(f'{node.location}: undefined variable "{node.left.name}"')
+                        check_match(node.location, t1, t2)
                         symtab.set(key, t2)
                         return t2
                 op: Type | None = symtab.get(node.op)
