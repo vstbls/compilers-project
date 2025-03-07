@@ -28,4 +28,5 @@ def asm(s: str) -> str:
 def compile(s: str, f: str) -> None:
     assembler.assemble(asm(s), f)
 
-print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))
+#print(irs('{var x = 2; x = {var x = 1; x}; x = x + 1}'))
+toast('var x = { { print_int(1) } { 2 } } x')
