@@ -1,12 +1,30 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from compiler.classes import Location, DummyLocation
-from compiler.types import Type, Unit
+from compiler.types import Type, Unit, FnType
 
 
 @dataclass
-class Expression:
-    location: Location = field(default_factory=lambda: DummyLocation(), init=False)
+class Node:
+    location: Location = field(kw_only=True, default_factory=lambda: DummyLocation(), compare=False)
     type: Type = field(kw_only=True, default_factory=lambda: Unit(), compare=False)
+
+@dataclass
+class Module(Node):
+    defs: list[Definition]
+    exprs: list[Expression]
+
+@dataclass
+class Definition(Node):
+    # type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
+    # Idk if the FnType needs to be enforced
+    name: str
+    params: list[Identifier]
+    exprs: list[Expression]
+
+@dataclass
+class Expression(Node):
+    pass
 
 @dataclass
 class Literal(Expression):
