@@ -3,7 +3,7 @@ import compiler.ast as ast
 from compiler.types import *
 
 
-def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
+def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
     pos = 0
     prev_token = tokens[0]
 
@@ -332,4 +332,6 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Expression:
     
     expression.location = tokens[0].location
 
-    return expression
+    module = ast.Module([], expression, location=expression.location)
+
+    return module

@@ -6,7 +6,7 @@ from typing import Any
 
 def generate_ir(
         root_types: dict[ir.IRVar, Type],
-        root_expr: ast.Expression
+        root_node: ast.Module
 ) -> list[ir.Instruction]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
 
@@ -250,15 +250,15 @@ def generate_ir(
         
     ins.append(ir.Label(DummyLocation(), 'start'))
 
-    var_final = visit(root_symtab, root_expr)
+    var_final = visit(root_symtab, root_node.expr)
     
     if var_types[var_final] == Int():
         ins.append(ir.Call(
-            root_expr.location, root_symtab.require('print_int'), [var_final], var_unit
+            root_node.location, root_symtab.require('print_int'), [var_final], var_unit
         ))
     elif var_types[var_final] == Bool():
         ins.append(ir.Call(
-            root_expr.location, root_symtab.require('print_bool'), [var_final], var_unit
+            root_node.location, root_symtab.require('print_bool'), [var_final], var_unit
         ))
 
     return ins

@@ -4,7 +4,7 @@ import compiler.ast as ast
 from compiler.ast import *
 from compiler.types import *
 
-def parse_string(s: str) -> ast.Expression: return parse(tokenize(s))
+def parse_string(s: str) -> ast.Module: return parse(tokenize(s))
 
 def assert_parse_fail(s: str) -> None:
     try:

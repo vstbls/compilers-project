@@ -12,15 +12,16 @@ class Node:
 @dataclass
 class Module(Node):
     defs: list[Definition]
-    exprs: list[Expression]
+    expr: Expression
 
 @dataclass
 class Definition(Node):
-    # type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
-    # Idk if the FnType needs to be enforced
     name: str
     params: list[Identifier]
     exprs: list[Expression]
+    res: Expression | None
+    # asdf type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
+    # Idk if the FnType needs to be enforced
 
 @dataclass
 class Expression(Node):

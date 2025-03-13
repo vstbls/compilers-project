@@ -4,10 +4,36 @@ from compiler.types import *
 from compiler.classes import Location
 from compiler.symtab import SymTab
 from compiler.builtins import builtin_function_types
-        
-#default_symtab = SymTab[Type](None, builtin_function_types)
 
-def typecheck(node: ast.Expression, symtab: SymTab = SymTab[Type](None, builtin_function_types.copy())) -> Type:
+def typecheck_module(module: ast.Module) -> Type:
+    symtab = SymTab[Type](None, builtin_function_types.copy())
+    
+    for d in module.defs:
+        definition_symtab = SymTab[Type](symtab)
+        typecheck_definition(d, definition_symtab)
+    
+    module_type = typecheck(module.expr, symtab)
+    module.type = module_type
+    return module_type
+
+def typecheck_definition(definition: ast.Definition, symtab: SymTab[Type]) -> Type:
+    for e in definition.exprs:
+        typecheck(e, symtab)
+
+    if definition.res:
+        res_type = typecheck(definition.res, symtab)
+    else:
+        res_type = Unit()
+
+    if isinstance(definition.type, FnType):
+        if definition.type.res == res_type:
+            return res_type # Maybe makes more sense to return FnType, but tbh the return types aren't even used rn
+        else:
+            raise TypeError(f'{definition.location}: return type doesn\'t match function definition ({definition.type})')
+    else:
+        raise ValueError(f'{definition.location}: compiler error, function type set wrong (got {definition.type})')
+
+def typecheck(node: ast.Expression, symtab: SymTab[Type]) -> Type:
     def check_match(where: Location, expected: Type, got: Type) -> None:
         if expected != got:
             raise TypeError(f'{node} at {where}: expected type {expected}, got {got}')
