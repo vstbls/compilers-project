@@ -7,7 +7,7 @@ from typing import Any
 def generate_ir(
         root_types: dict[ir.IRVar, Type],
         root_node: ast.Module
-) -> list[ir.Instruction]:
+) -> dict[str, list[ir.Instruction]]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
 
     var_unit = ir.IRVar('unit')
@@ -261,4 +261,6 @@ def generate_ir(
             root_node.location, root_symtab.require('print_bool'), [var_final], var_unit
         ))
 
-    return ins
+    res = {'main': ins}
+
+    return res

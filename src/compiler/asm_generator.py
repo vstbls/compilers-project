@@ -17,7 +17,7 @@ class Locals:
     def stack_used(self) -> int:
         return self._stack_used
     
-def generate_asm(instructions: list[ir.Instruction]) -> str:
+def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
     lines = []
     def emit(line: str) -> None: lines.append(line)
 
@@ -41,79 +41,82 @@ def generate_asm(instructions: list[ir.Instruction]) -> str:
                             add(v)
         
         return list(result_set)
-
-    locals = Locals(get_all_ir_variables(instructions))
     
     emit("""
-    .extern print_int
-    .extern print_bool
-    .extern read_int
-    .global main
-    .type main, @function
+.extern print_int
+.extern print_bool
+.extern read_int
+.global main
+.type main, @function
 
-    .section .text
-
-main:
-    pushq %rbp
-    movq %rsp, %rbp
+.section .text
 """) # Declarations and init
-    
-    emit(f'\tsubq ${locals.stack_used()}, %rsp') # Reserve space for locals
 
-    for insn in instructions:
-        emit(f'\t# {insn}')
-        match insn:
-            case ir.Label():
-                emit('')
-                emit(f'.L{insn.name}:')
+    def parse_module(module: str, instructions: list[ir.Instruction]) -> None:
+        locals = Locals(get_all_ir_variables(instructions))
 
-            case ir.LoadIntConst():
-                if -2**32 <= insn.value < 2**31:
-                    emit(f'\tmovq ${insn.value}, {locals.get_ref(insn.dest)}')
-                else:
-                    emit(f'\tmovabsq ${insn.value}, %rax')
-                    emit(f'\tmovq %rax, {locals.get_ref(insn.dest)}')
+        emit(f'{module}:')
+        emit('pushq %rbp')
+        emit('movq %rsp, %rbp')
+        emit(f'subq ${locals.stack_used()}, %rsp') # Reserve space for locals
 
-            case ir.LoadBoolConst():
-                val = int(insn.value)
-                emit(f'\tmovq ${val}, {locals.get_ref(insn.dest)}')
+        for insn in instructions:
+            emit(f'# {insn}')
+            match insn:
+                case ir.Label():
+                    emit('')
+                    emit(f'.L{insn.name}:')
 
-            case ir.Copy():
-                source = locals.get_ref(insn.source)
-                dest = locals.get_ref(insn.dest)
-                emit(f'\tmovq {source}, %rax')
-                emit(f'\tmovq %rax, {dest}')
+                case ir.LoadIntConst():
+                    if -2**32 <= insn.value < 2**31:
+                        emit(f'movq ${insn.value}, {locals.get_ref(insn.dest)}')
+                    else:
+                        emit(f'movabsq ${insn.value}, %rax')
+                        emit(f'movq %rax, {locals.get_ref(insn.dest)}')
 
-            case ir.CondJump():
-                emit(f'\tmovq {locals.get_ref(insn.cond)}, %rax')
-                emit(f'\tcmpq $0, %rax') # 1 if %rax == 0, 0 otherwise (%rax > 0). Stored in EFLAGS (not sure what that is)
-                emit(f'\tjne .L{insn.then_label.name}') # %rax != 0 -> Comparison was true
-                emit(f'\tjmp .L{insn.else_label.name}') # %rax == 0 -> Comparison was false
+                case ir.LoadBoolConst():
+                    val = int(insn.value)
+                    emit(f'movq ${val}, {locals.get_ref(insn.dest)}')
 
-            case ir.Jump():
-                emit(f'\tjmp .L{insn.label.name}')
+                case ir.Copy():
+                    source = locals.get_ref(insn.source)
+                    dest = locals.get_ref(insn.dest)
+                    emit(f'movq {source}, %rax')
+                    emit(f'movq %rax, {dest}')
 
-            case ir.Call():
-                f_name = insn.fun.name
-                if f_name in intrinsics.all_intrinsics:
-                    intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
-                        arg_refs=[locals.get_ref(arg) for arg in insn.args],
-                        result_register='%rax',
-                        emit=emit
-                    ))
-                else:
-                    if len(insn.args) > 6:
-                        raise Exception('Functions with more than 6 arguments are not supported')
-                    for i in range(len(insn.args)):
-                        emit(f'\tmovq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
-                    emit(f'\ncallq {insn.fun.name}')
-                emit(f'\tmovq %rax, {locals.get_ref(insn.dest)}')
+                case ir.CondJump():
+                    emit(f'movq {locals.get_ref(insn.cond)}, %rax')
+                    emit(f'cmpq $0, %rax') # 1 if %rax == 0, 0 otherwise (%rax > 0). Stored in EFLAGS (not sure what that is)
+                    emit(f'jne .L{insn.then_label.name}') # %rax != 0 -> Comparison was true
+                    emit(f'jmp .L{insn.else_label.name}') # %rax == 0 -> Comparison was false
+
+                case ir.Jump():
+                    emit(f'jmp .L{insn.label.name}')
+
+                case ir.Call():
+                    f_name = insn.fun.name
+                    if f_name in intrinsics.all_intrinsics:
+                        intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
+                            arg_refs=[locals.get_ref(arg) for arg in insn.args],
+                            result_register='%rax',
+                            emit=emit
+                        ))
+                    else:
+                        if len(insn.args) > 6:
+                            raise Exception('Functions with more than 6 arguments are not supported')
+                        for i in range(len(insn.args)):
+                            emit(f'movq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
+                        emit(f'\ncallq {insn.fun.name}')
+                    emit(f'movq %rax, {locals.get_ref(insn.dest)}')
+
+    for module, instructions in modules.items():
+        parse_module(module, instructions)
 
     emit("""
 .Lend:
-    movq $0, %rax
-    movq %rbp, %rsp
-    popq %rbp
-    ret""")
+movq $0, %rax
+movq %rbp, %rsp
+popq %rbp
+ret""")
 
     return '\n'.join(lines)
