@@ -304,16 +304,80 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
             left.location = operator_token.location
 
         return left
+    
+    def parse_definition() -> ast.Definition:
+        def get_type(s: str) -> Type:
+            match s:
+                case 'Int':
+                    return Int()
+                case 'Bool':
+                    return Bool()
+                case 'Unit':
+                    return Unit()
+                case _:
+                    raise ValueError(f'Unsupported type conversion from string "{s}"')
 
-    expression = parse_assignment()
+        consume('fun')
+
+        fun_token = consume()
+        fun_name = fun_token.text
+        
+        consume('(')
+        params: list[tuple[str, Type]] = []
+        while peek().text != ')':
+            param_token = consume()
+            param_name = param_token.text
+            if param_name in [param[0] for param in params]:
+                raise NameError(f'{param_token.location}: parameter "{param_name}" already used in function definition')
+            
+            consume(':')
+
+            type_token = consume(['Int', 'Bool', 'Unit'])
+            param_type = get_type(type_token.text)
+            params.append((param_name, param_type))
+
+            if peek().text != ')':
+                consume(',')
+
+        consume(')')
+        consume(':')
+
+        type_token = consume(['Int', 'Bool', 'Unit'])
+        res_type = get_type(type_token.text)
+
+        fun_type = FnType([param[1] for param in params], res_type)
+
+        block = parse_block()
+
+        return ast.Definition(
+            fun_name,
+            [param[0] for param in params],
+            block,
+            type=fun_type,
+            location=fun_token.location
+            )
+    
+    def parse_top_level() -> ast.Definition | ast.Expression:
+        if peek().text == 'fun':
+            return parse_definition()
+        return parse_assignment()
+
+    node = parse_top_level()
+    expressions = []
+    defs = []
+    if isinstance(node, ast.Definition):
+        defs.append(node)
+    else:
+        expressions.append(node)
 
     if pos < len(tokens) and (peek().text == ';' or prev_token.text == '}'):
         if peek().text == ';':
             consume(';')
-        expressions = [expression]
+
+        # TODO: Fix her (only supports one def)
         result_expr = None
         while pos < len(tokens):
-            next_expr = parse_assignment()
+            next_expr = parse_top_level()
             if prev_token.text == '}' or peek().text == ';':
                 if peek().text == ';':
                     consume(';')
@@ -325,13 +389,19 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         if prev_token.text == '}':
             result_expr = expressions.pop()
 
-        expression = ast.Block(expressions, result_expr)
-
     if pos < len(tokens):
         raise ValueError(f'{peek().location}: unexpected token "{peek().text}"')
     
-    expression.location = tokens[0].location
+    if len(expressions) == 0:
+        expression = None
+    elif len(expressions) == 1 and not result_expr:
+        expression = expressions.pop()
+    else:
+        expression = ast.Block(expressions, result_expr)
 
-    module = ast.Module([], expression, location=expression.location)
+    if expression:
+        expression.location = tokens[0].location
+
+    module = ast.Module(defs, expression, location=node.location)
 
     return module

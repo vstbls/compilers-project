@@ -12,14 +12,13 @@ class Node:
 @dataclass
 class Module(Node):
     defs: list[Definition]
-    expr: Expression
+    expr: Expression | None
 
 @dataclass
 class Definition(Node):
     name: str
     params: list[Identifier]
-    exprs: list[Expression]
-    res: Expression | None
+    block: Block
     # asdf type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
     # Idk if the FnType needs to be enforced
 
