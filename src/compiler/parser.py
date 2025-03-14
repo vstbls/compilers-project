@@ -96,13 +96,18 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         else:
             raise TypeError(f'{peek().location}: expected an integer or boolean literal or identifier')
 
-    def parse_block() -> ast.Block:
+    def parse_block(is_fun: bool = False) -> ast.Block:
         nonlocal prev_token
         loc = consume('{').location
 
         expressions = []
         result = None
         while peek().text != '}':
+            if is_fun and peek().text == 'return':
+                consume('return')
+                result = parse_assignment()
+                break
+            
             expr = parse_assignment()
             if prev_token.text == '}' or peek().text == ';':
                 if peek().text == ';':
@@ -112,7 +117,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
                 result = expr
                 break
 
-        if prev_token.text == '}':
+        if prev_token.text == '}' and not is_fun:
             result = expressions.pop()
 
         if peek().text != '}':
@@ -347,7 +352,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
 
         fun_type = FnType([param[1] for param in params], res_type)
 
-        block = parse_block()
+        block = parse_block(True)
 
         return ast.Definition(
             fun_name,
@@ -374,16 +379,20 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         if peek().text == ';':
             consume(';')
 
-        # TODO: Fix her (only supports one def)
         result_expr = None
         while pos < len(tokens):
-            next_expr = parse_top_level()
+            next_node = parse_top_level()
+            
+            if isinstance(node, ast.Definition):
+                defs.append(next_node)
+                continue
+                
             if prev_token.text == '}' or peek().text == ';':
                 if peek().text == ';':
                     consume(';')
-                expressions.append(next_expr)
+                expressions.append(next_node)
             else:
-                result_expr = next_expr
+                result_expr = next_node
                 break
 
         if prev_token.text == '}':
