@@ -367,58 +367,44 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
             return parse_definition()
         return parse_assignment()
 
-    node = parse_top_level()
-    expressions = []
-    defs = []
-    if isinstance(node, ast.Definition):
-        defs.append(node)
-    else:
-        expressions.append(node)
-
-    if pos < len(tokens) and (peek().text == ';' or prev_token.text == '}'):
-        if peek().text == ';':
-            consume(';')
-
-        result_expr = None
-        found_result = False
-        
-        while pos < len(tokens):
-            could_return = False
-            next_node = parse_top_level()
-            
-            if isinstance(node, ast.Definition):
-                defs.append(next_node)
-            else:
-                if found_result: # Already found the result assignment before, after which the source should no longer have assignments
-                    raise ValueError(f'{node.location}: unexpected assignment after result; did you forget a semicolon?')
-                expressions.append(next_node)
-                if prev_token.text == '}':
-                    if peek().text == ';':
-                        consume(';')
-                    else:
-                        could_return = True
-                elif peek().text == ';':
-                    consume(';')
-                else: # Encountered assignment that doesn't end with '}' or ';', which is the return assignment
-                    could_return = True
-                    found_result = True
-
-        if could_return:
-            result_expr = expressions.pop()
-
-    if pos < len(tokens):
-        raise ValueError(f'{peek().location}: unexpected token "{peek().text}"')
+    defs: list[ast.Definition] = []
+    exprs: list[ast.Expression] = []
     
-    if len(expressions) == 0:
-        expression = None
-    elif len(expressions) == 1 and not result_expr:
-        expression = expressions.pop()
-    else:
-        expression = ast.Block(expressions, result_expr)
+    found_result = False
+    ended_with_block = False
+    
+    while pos < len(tokens):
+        node = parse_top_level()
+        if isinstance(node, ast.Definition):
+            defs.append(node)
+        else: # Node is an expression
+            if found_result:
+                raise ValueError(f'{node.location}: result expression already encountered; did you forget a semicolon?')
+            exprs.append(node)
+            ended_with_block = False
+            if prev_token.text == '}':
+                if peek().text == ';':
+                    consume(';')
+                else:
+                    ended_with_block = True
+            elif peek().text == ';':
+                consume(';')
+            else:
+                found_result = True
+           
+    result_expr = None         
+    if found_result or ended_with_block:
+        result_expr = exprs.pop()
+    
+    expr = None
+    if len(exprs) == 0 and result_expr:
+        expr = result_expr
+    elif len(exprs) > 0:
+        expr = ast.Block(exprs, result_expr)
 
-    if expression:
-        expression.location = tokens[0].location
+    if expr:
+        expr.location = tokens[0].location
 
-    module = ast.Module(defs, expression, location=node.location)
+    module = ast.Module(defs, expr, location=node.location)
 
     return module
