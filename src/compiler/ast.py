@@ -19,7 +19,7 @@ class Definition(Node):
     name: str
     params: list[Identifier]
     block: Block
-    # asdf type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
+    type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
     # Idk if the FnType needs to be enforced
 
 @dataclass

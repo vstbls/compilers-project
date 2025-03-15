@@ -328,18 +328,18 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         fun_name = fun_token.text
         
         consume('(')
-        params: list[tuple[str, Type]] = []
+        params: list[tuple[ast.Identifier, Type]] = []
         while peek().text != ')':
             param_token = consume()
             param_name = param_token.text
-            if param_name in [param[0] for param in params]:
+            if param_name in [param[0].name for param in params]:
                 raise NameError(f'{param_token.location}: parameter "{param_name}" already used in function definition')
             
             consume(':')
 
             type_token = consume(['Int', 'Bool', 'Unit'])
             param_type = get_type(type_token.text)
-            params.append((param_name, param_type))
+            params.append((ast.Identifier(param_name), param_type))
 
             if peek().text != ')':
                 consume(',')

@@ -6,32 +6,42 @@ from compiler.symtab import SymTab
 from compiler.builtins import builtin_function_types
 
 def typecheck_module(module: ast.Module) -> Type:
-    symtab = SymTab[Type](None, builtin_function_types.copy())
+    type_dict = builtin_function_types.copy()
+    for d in module.defs:
+        if d.name in type_dict:
+            raise ValueError(f'{d.location}: function "{d.name}" already defined')
+        type_dict[d.name] = d.type
+    symtab = SymTab[Type](None, type_dict)
     
     for d in module.defs:
         definition_symtab = SymTab[Type](symtab)
         typecheck_definition(d, definition_symtab)
     
-    module_type = typecheck(module.expr, symtab)
+    if module.expr:
+        module_type = typecheck(module.expr, symtab)
+    else:
+        module_type = Unit()
+    
     module.type = module_type
     return module_type
 
 def typecheck_definition(definition: ast.Definition, symtab: SymTab[Type]) -> Type:
-    for e in definition.exprs:
+    assert len(definition.params) == len(definition.type.params)
+    for i in range(len(definition.params)):
+        symtab.set(definition.params[i].name, definition.type.params[i])
+    
+    for e in definition.block.exprs:
         typecheck(e, symtab)
 
-    if definition.res:
-        res_type = typecheck(definition.res, symtab)
+    if definition.block.res:
+        res_type = typecheck(definition.block.res, symtab)
     else:
         res_type = Unit()
 
-    if isinstance(definition.type, FnType):
-        if definition.type.res == res_type:
-            return res_type # Maybe makes more sense to return FnType, but tbh the return types aren't even used rn
-        else:
-            raise TypeError(f'{definition.location}: return type doesn\'t match function definition ({definition.type})')
+    if definition.type.res == res_type:
+        return res_type # Maybe makes more sense to return Unit or FnType, but tbh the return types aren't even used rn
     else:
-        raise ValueError(f'{definition.location}: compiler error, function type set wrong (got {definition.type})')
+        raise TypeError(f'{definition.location}: return type doesn\'t match function definition ({definition.type})')
 
 def typecheck(node: ast.Expression, symtab: SymTab[Type]) -> Type:
     def check_match(where: Location, expected: Type, got: Type) -> None:
