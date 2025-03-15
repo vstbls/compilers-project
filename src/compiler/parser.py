@@ -380,22 +380,30 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
             consume(';')
 
         result_expr = None
+        found_result = False
+        
         while pos < len(tokens):
+            could_return = False
             next_node = parse_top_level()
             
             if isinstance(node, ast.Definition):
                 defs.append(next_node)
-                continue
-                
-            if prev_token.text == '}' or peek().text == ';':
-                if peek().text == ';':
-                    consume(';')
-                expressions.append(next_node)
             else:
-                result_expr = next_node
-                break
+                if found_result: # Already found the result assignment before, after which the source should no longer have assignments
+                    raise ValueError(f'{node.location}: unexpected assignment after result; did you forget a semicolon?')
+                expressions.append(next_node)
+                if prev_token.text == '}':
+                    if peek().text == ';':
+                        consume(';')
+                    else:
+                        could_return = True
+                elif peek().text == ';':
+                    consume(';')
+                else: # Encountered assignment that doesn't end with '}' or ';', which is the return assignment
+                    could_return = True
+                    found_result = True
 
-        if prev_token.text == '}':
+        if could_return:
             result_expr = expressions.pop()
 
     if pos < len(tokens):
