@@ -9,7 +9,7 @@ from compiler.interpreter import interpret, Value
 from compiler.asm_generator import generate_asm
 
 def ps(s: str) -> ast.Module: return parse(tokenize(s), False)
-def ips(s: str) -> Value: return interpret(ps(s))
+#def ips(s: str) -> Value: return interpret(ps(s))
 def irs(s: str) -> str: return "\n".join([str(inst)
                                           for instructions in ir.generate_ir(
                                               toast(s)).values()

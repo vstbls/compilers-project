@@ -12,7 +12,8 @@ def generate_ir(module: ast.Module) -> dict[str, list[ir.Instruction]]:
     labels: set[str] = set()
     for d in module.defs:
         def_ins[d.name] = def_to_ir(root_types, d.block, labels, d)
-    def_ins['main'] = def_to_ir(root_types, module.expr, labels, None)
+    if module.expr:
+        def_ins['main'] = def_to_ir(root_types, module.expr, labels, None)
 
     return def_ins
 
@@ -24,6 +25,9 @@ def def_to_ir(
         fun_def: ast.Definition | None
 ) -> list[ir.Instruction]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
+    if fun_def:
+        for i in range(len(fun_def.params)):
+            var_types[ir.IRVar(fun_def.params[i].name)] = fun_def.type.params[i]
 
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit()
@@ -252,7 +256,7 @@ def def_to_ir(
         return var_unit
 
     root_symtab = SymTab[ir.IRVar]()
-    for v in root_types.keys():
+    for v in var_types.keys():
         root_symtab.set(v.name, v)
         
     if fun_def:
