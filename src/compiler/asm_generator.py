@@ -42,27 +42,27 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
         
         return list(result_set)
     
-    emit("""
-.extern print_int
-.extern print_bool
-.extern read_int
-.global main
-.type main, @function
-
-.section .text
-""") # Declarations and init
+    emit('.extern print_int')
+    emit('.extern print_bool')
+    emit('.extern read_int')
+    emit('.section .text') # Declarations and init
 
     def parse_module(module: str, instructions: list[ir.Instruction]) -> None:
         locals = Locals(get_all_ir_variables(instructions))
 
-        emit(f'{module}:')
-        emit('pushq %rbp')
-        emit('movq %rsp, %rbp')
-        emit(f'subq ${locals.stack_used()}, %rsp') # Reserve space for locals
+        # emit(f'{module}:')
+        # emit('pushq %rbp')
+        # emit('movq %rsp, %rbp')
+        # emit(f'subq ${locals.stack_used()}, %rsp') # Reserve space for locals
 
         for insn in instructions:
             emit(f'# {insn}')
             match insn:
+                case ir.Fun():
+                    emit(f'.global {insn.name}')
+                    emit(f'.type {insn.name}, @function')
+                    emit(f'{insn.name}:')
+
                 case ir.Label():
                     emit('')
                     emit(f'.L{insn.name}:')
@@ -95,19 +95,39 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
 
                 case ir.Call():
                     f_name = insn.fun.name
+                    stack_offset = locals.stack_used() % 16 # How much stack is off from being a multiple of 16
+                    if len(insn.args) > 6:
+                        stack_offset += (8 * (len(insn.args) - 6)) % 16 # How much stack will be off after pushing to stack
                     if f_name in intrinsics.all_intrinsics:
+                        stack_offset = 0
                         intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
                             arg_refs=[locals.get_ref(arg) for arg in insn.args],
                             result_register='%rax',
                             emit=emit
                         ))
                     else:
-                        if len(insn.args) > 6:
-                            raise Exception('Functions with more than 6 arguments are not supported')
+                        if stack_offset > 0:
+                            emit(f'subq ${stack_offset}, %rsp')
                         for i in range(len(insn.args)):
-                            emit(f'movq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
-                        emit(f'\ncallq {insn.fun.name}')
+                            if i < 6:
+                                emit(f'movq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
+                            else:
+                                emit(f'pushq {locals.get_ref(insn.args[i])}')
+                        emit(f'\ncallq {f_name}')
                     emit(f'movq %rax, {locals.get_ref(insn.dest)}')
+                    if len(insn.args) > 6:
+                        stack_offset += 8 * (len(insn.args) - 6) # Stack is off by stack_offset + 8 * (number of parameters on the stack) (THIS DOESNT QUITE WORK YET)
+                    if stack_offset > 0:
+                        emit(f'add ${stack_offset}, %rsp')
+
+                case ir.Return():
+                    if insn.var:
+                        emit(f'movq {locals.get_ref(insn.var)}, %rax')
+                    else:
+                        emit('movq $0, %rax')
+                    emit('movq %rbp, %rsp')
+                    emit('popq %rbp')
+                    emit('ret')
 
     for module, instructions in modules.items():
         parse_module(module, instructions)
