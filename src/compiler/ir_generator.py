@@ -9,16 +9,11 @@ def generate_ir(
         root_node: ast.Module
 ) -> dict[str, list[ir.Instruction]]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
+    var_defs: dict[ir.IRVar, Type] = {ir.IRVar(d.name) : d.type for d in root_node.defs}
+    var_types = var_types | var_defs
 
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit()
-
-    # var_prefix used as the prefix for all variables
-    # while loop ensures it doesn't collide with variables declared in root_types
-    var_prefix = '_x'
-    var_counter = 0
-    while ir.IRVar(var_prefix) in root_types.keys():
-        var_prefix = '_' + var_prefix
     
     def find_unique(s: str, strings: list[str]) -> str:
         overlap_counter = 1
@@ -247,6 +242,11 @@ def generate_ir(
     root_symtab = SymTab[ir.IRVar]()
     for v in root_types.keys():
         root_symtab.set(v.name, v)
+    for d in var_defs.keys():
+        root_symtab.set(d.name, d)
+        
+    for d in root_node.defs:
+        
         
     ins.append(ir.Label(DummyLocation(), 'start'))
 
@@ -260,6 +260,8 @@ def generate_ir(
         ins.append(ir.Call(
             root_node.location, root_symtab.require('print_bool'), [var_final], var_unit
         ))
+        
+    ins.append(ir.Return(DummyLocation(), None))
 
     res = {'main': ins}
 
