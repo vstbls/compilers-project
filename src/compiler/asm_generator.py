@@ -49,7 +49,7 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
 
     def parse_module(module: str, instructions: list[ir.Instruction]) -> None:
         locals = Locals(get_all_ir_variables(instructions))
-
+        emit(f'# Stack used: {locals.stack_used()}')
         # emit(f'{module}:')
         # emit('pushq %rbp')
         # emit('movq %rsp, %rbp')
@@ -95,30 +95,28 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
 
                 case ir.Call():
                     f_name = insn.fun.name
-                    stack_offset = locals.stack_used() % 16 # How much stack is off from being a multiple of 16
-                    if len(insn.args) > 6:
-                        stack_offset += (8 * (len(insn.args) - 6)) % 16 # How much stack will be off after pushing to stack
+                    arg_offset = 0 if len(insn.args) < 6 else 8 * (len(insn.args) - 6)
+                    offset = (locals.stack_used() + arg_offset) % 16
                     if f_name in intrinsics.all_intrinsics:
-                        stack_offset = 0
+                        offset = 0
                         intrinsics.all_intrinsics[f_name](intrinsics.IntrinsicArgs(
                             arg_refs=[locals.get_ref(arg) for arg in insn.args],
                             result_register='%rax',
                             emit=emit
                         ))
                     else:
-                        if stack_offset > 0:
-                            emit(f'subq ${stack_offset}, %rsp')
+                        if offset > 0:
+                            emit(f'subq ${offset}, %rsp')
                         for i in range(len(insn.args)):
                             if i < 6:
                                 emit(f'movq {locals.get_ref(insn.args[i])}, {arg_regs[i]}')
                             else:
                                 emit(f'pushq {locals.get_ref(insn.args[i])}')
-                        emit(f'\ncallq {f_name}')
+                        emit(f'callq {f_name}')
                     emit(f'movq %rax, {locals.get_ref(insn.dest)}')
-                    if len(insn.args) > 6:
-                        stack_offset += 8 * (len(insn.args) - 6) # Stack is off by stack_offset + 8 * (number of parameters on the stack) (THIS DOESNT QUITE WORK YET)
-                    if stack_offset > 0:
-                        emit(f'add ${stack_offset}, %rsp')
+                    offset += arg_offset
+                    if offset > 0:
+                        emit(f'add ${offset}, %rsp')
 
                 case ir.Return():
                     if insn.var:
@@ -132,11 +130,11 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
     for module, instructions in modules.items():
         parse_module(module, instructions)
 
-    emit("""
-.Lend:
-movq $0, %rax
-movq %rbp, %rsp
-popq %rbp
-ret""")
+#     emit("""
+# .Lend:
+# movq $0, %rax
+# movq %rbp, %rsp
+# popq %rbp
+# ret""")
 
     return '\n'.join(lines)
