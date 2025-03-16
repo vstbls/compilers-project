@@ -47,11 +47,14 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
     emit('.extern read_int')
     emit('.section .text') # Declarations and init
 
-    def parse_module(module: str, instructions: list[ir.Instruction]) -> None:
-        locals = Locals(get_all_ir_variables(instructions))
+    def parse_module(instructions: list[ir.Instruction]) -> None:
+        local_vars = get_all_ir_variables(instructions)
+        locals = Locals(local_vars)
         emit(f'# Stack used: {locals.stack_used()}')
+        for v in local_vars:
+            emit(f'# {v} in {locals.get_ref(v)}')
         # emit(f'{module}:')
-        # emit('pushq %rbp')
+        emit('pushq %rbp')
         # emit('movq %rsp, %rbp')
         # emit(f'subq ${locals.stack_used()}, %rsp') # Reserve space for locals
 
@@ -62,6 +65,21 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
                     emit(f'.global {insn.name}')
                     emit(f'.type {insn.name}, @function')
                     emit(f'{insn.name}:')
+                    
+                    emit('pusq %rbp')
+                    emit('movq %rsp, %rbp')
+                    
+                    if insn.params:
+                        for i in range(len(insn.params)):
+                            if i >= 6:
+                                break # Only the first 6 parameters need to be moved from registers
+                            p = insn.params[i]
+                            if p in local_vars: # Only copy the parameter if it's used in the function
+                                emit(f'movq {arg_regs[i]}, {locals.get_ref(p)}')
+                            
+                    
+                    emit(f'subq ${locals.stack_used()}, %rsp') # Reserve space for locals
+                    
 
                 case ir.Label():
                     emit('')
@@ -127,8 +145,8 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
                     emit('popq %rbp')
                     emit('ret')
 
-    for module, instructions in modules.items():
-        parse_module(module, instructions)
+    for instructions in modules.values():
+        parse_module(instructions)
 
 #     emit("""
 # .Lend:

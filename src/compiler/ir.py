@@ -73,7 +73,7 @@ class CondJump(Instruction):
 
 @dataclass(frozen=True)
 class Fun(Label):
-    pass
+    params: list[IRVar] | None
 
 
 @dataclass(frozen=True)

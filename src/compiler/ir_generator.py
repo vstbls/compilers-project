@@ -25,9 +25,12 @@ def def_to_ir(
         fun_def: ast.Definition | None
 ) -> list[ir.Instruction]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
+    var_params: list[ir.IRVar] = []
     if fun_def:
         for i in range(len(fun_def.params)):
-            var_types[ir.IRVar(fun_def.params[i].name)] = fun_def.type.params[i]
+            var_param = ir.IRVar(fun_def.params[i].name)
+            var_params.append(var_param)
+            var_types[var_param] = fun_def.type.params[i]
 
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit()
@@ -260,7 +263,7 @@ def def_to_ir(
         root_symtab.set(v.name, v)
         
     if fun_def:
-        ins.append(ir.Fun(root_node.location, fun_def.name))
+        ins.append(ir.Fun(root_node.location, fun_def.name, var_params))
         var_final = visit(root_symtab, root_node)
         if var_types[var_final] == Unit():
             ins.append(ir.Return(root_node.location, None))
@@ -268,7 +271,7 @@ def def_to_ir(
             ins.append(ir.Return(root_node.location, var_final))
         return ins
 
-    ins.append(ir.Fun(root_node.location, 'main'))
+    ins.append(ir.Fun(root_node.location, 'main', None))
     var_final = visit(root_symtab, root_node)
     
     if var_types[var_final] == Int():
