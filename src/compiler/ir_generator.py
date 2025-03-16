@@ -1,16 +1,29 @@
-from compiler import ast, ir
+from compiler import ast, ir, builtins
 from compiler.symtab import SymTab
 from compiler.types import Bool, Int, Type, Unit
 from compiler.classes import DummyLocation
-from typing import Any
 
-def generate_ir(
+def generate_ir(module: ast.Module) -> dict[str, list[ir.Instruction]]:
+    root_types = builtins.builtin_var_types.copy()
+    def_types = {ir.IRVar(d.name): d.type for d in module.defs}
+    root_types = root_types | def_types # Add user defined functions to root types
+
+    def_ins: dict[str, list[ir.Instruction]] = {}
+    labels: set[str] = set()
+    for d in module.defs:
+        def_ins[d.name] = def_to_ir(root_types, d.block, labels, d)
+    def_ins['main'] = def_to_ir(root_types, module.expr, labels, None)
+
+    return def_ins
+
+
+def def_to_ir(
         root_types: dict[ir.IRVar, Type],
-        root_node: ast.Module
-) -> dict[str, list[ir.Instruction]]:
+        root_node: ast.Expression,
+        labels: set[str],
+        fun_def: ast.Definition | None
+) -> list[ir.Instruction]:
     var_types: dict[ir.IRVar, Type] = root_types.copy()
-    var_defs: dict[ir.IRVar, Type] = {ir.IRVar(d.name) : d.type for d in root_node.defs}
-    var_types = var_types | var_defs
 
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit()
@@ -29,7 +42,6 @@ def generate_ir(
         var_types[var_new] = t
         return var_new
     
-    labels: set[str] = set()
     def new_label(label_name: str = 'label') -> ir.Label:
         label_name = find_unique(label_name, list(labels))
         labels.add(label_name)
@@ -242,15 +254,18 @@ def generate_ir(
     root_symtab = SymTab[ir.IRVar]()
     for v in root_types.keys():
         root_symtab.set(v.name, v)
-    for d in var_defs.keys():
-        root_symtab.set(d.name, d)
         
-    for d in root_node.defs:
-        
-        
-    ins.append(ir.Label(DummyLocation(), 'start'))
+    if fun_def:
+        ins.append(ir.Fun(root_node.location, fun_def.name))
+        var_final = visit(root_symtab, root_node)
+        if var_types[var_final] == Unit():
+            ins.append(ir.Return(root_node.location, None))
+        else:
+            ins.append(ir.Return(root_node.location, var_final))
+        return ins
 
-    var_final = visit(root_symtab, root_node.expr)
+    ins.append(ir.Fun(root_node.location, 'main'))
+    var_final = visit(root_symtab, root_node)
     
     if var_types[var_final] == Int():
         ins.append(ir.Call(
@@ -263,6 +278,4 @@ def generate_ir(
         
     ins.append(ir.Return(DummyLocation(), None))
 
-    res = {'main': ins}
-
-    return res
+    return ins

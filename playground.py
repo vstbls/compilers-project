@@ -12,10 +12,16 @@ def ps(s: str) -> ast.Module: return parse(tokenize(s), False)
 def ips(s: str) -> Value: return interpret(ps(s))
 def irs(s: str) -> str: return "\n".join([str(inst)
                                           for instructions in ir.generate_ir(
-                                              builtins.builtin_var_types,
                                               toast(s)).values()
                                           for inst in instructions
                                           ])
+# def irs(s: str) -> str:
+#     module_ir = ir.generate_ir(toast(s))
+#     res: list[str] = []
+#     for def_name, def_ir in module_ir.items():
+#         res.append(def_name)
+
+
 def toast(s: str) -> ast.Module:
     e = ps(s)
     typecheck_module(e) # Need to perform type checking after parsing to apply types to all nodes
@@ -23,7 +29,6 @@ def toast(s: str) -> ast.Module:
 
 def asm(s: str) -> str:
     return generate_asm(ir.generate_ir(
-        builtins.builtin_var_types,
         toast(s)
     ))
 
