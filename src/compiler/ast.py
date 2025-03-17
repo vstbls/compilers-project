@@ -20,7 +20,6 @@ class Definition(Node):
     params: list[Identifier]
     block: Block
     type: FnType = field(kw_only=True, default_factory=lambda: FnType([], Unit()), compare=False)
-    # Idk if the FnType needs to be enforced
 
 @dataclass
 class Expression(Node):
@@ -79,3 +78,7 @@ class Break(Expression):
 @dataclass
 class Continue(Expression):
     pass
+
+@dataclass
+class Return(Expression):
+    expr: Expression | None

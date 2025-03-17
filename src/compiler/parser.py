@@ -96,18 +96,13 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         else:
             raise TypeError(f'{peek().location}: expected an integer or boolean literal or identifier')
 
-    def parse_block(is_fun: bool = False) -> ast.Block:
+    def parse_block() -> ast.Block:
         nonlocal prev_token
         loc = consume('{').location
 
         expressions = []
         result = None
         while peek().text != '}':
-            if is_fun and peek().text == 'return':
-                consume('return')
-                result = parse_assignment()
-                break
-            
             expr = parse_assignment()
             if prev_token.text == '}' or peek().text == ';':
                 if peek().text == ';':
@@ -117,7 +112,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
                 result = expr
                 break
 
-        if prev_token.text == '}' and not is_fun:
+        if prev_token.text == '}':
             result = expressions.pop()
 
         if peek().text != '}':
@@ -205,6 +200,16 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         )
         ret.location = id.location
         return ret
+    
+    def parse_return() -> ast.Return:
+        loc = consume('return').location
+        if peek().text == ';':
+            expr = None
+        else:
+            expr = parse_assignment()
+        res = ast.Return(expr)
+        res.location = loc
+        return res
 
     def parse_term() -> ast.Expression:
         if peek().text == '{':
@@ -223,6 +228,8 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
         if peek().text == 'continue':
             consume('continue')
             return ast.Continue()
+        if peek().text == 'return':
+            return parse_return()
         
         term = parse_factor()
 
@@ -352,7 +359,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
 
         fun_type = FnType([param[1] for param in params], res_type)
 
-        block = parse_block(True)
+        block = parse_block()
 
         return ast.Definition(
             fun_name,
@@ -373,6 +380,8 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
     found_result = False
     ended_with_block = False
     
+    # Turns out parsing expressions and definitions separately is unnecessary because
+    # definitions are syntactically wrong after any top level expressions. Oh well.
     while pos < len(tokens):
         node = parse_top_level()
         if isinstance(node, ast.Definition):
@@ -392,7 +401,7 @@ def parse(tokens: list[Token], debug: bool = False) -> ast.Module:
             else:
                 found_result = True
            
-    result_expr = None         
+    result_expr = None
     if found_result or ended_with_block:
         result_expr = exprs.pop()
     
