@@ -66,7 +66,7 @@ def generate_asm(modules: dict[str, list[ir.Instruction]]) -> str:
                     emit(f'.type {insn.name}, @function')
                     emit(f'{insn.name}:')
                     
-                    emit('pusq %rbp')
+                    emit('pushq %rbp')
                     emit('movq %rsp, %rbp')
                     
                     if insn.params:
