@@ -1,3 +1,22 @@
+## Info
+
+Small compiler created for University of Helsinki's spring 2025 [Compilers course](https://hy-compilers.github.io/spring-2025/).
+Largely based on the course material, courtesy of Martin Pärtel.
+
+Supported features:
+
+- Integers
+- Booleans
+- Binary operators `+`, `-`, `*`, `/`, `%`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `and`, `or`
+- Unary operators `-` and `not`
+- Library functions `print_int`, `read_int` and `print_bool`
+- Blocks of statements
+- Local variables with initializers
+- Assignment statements
+- `if`-`then` and `if`-`then`-`else`
+- `while` loops
+- `break` and `continue` expressions
+- Function definitions
 
 ## Setup
 
@@ -26,28 +45,11 @@ If you see other errors, you may have to investigate.
 If you have trouble with Poetry not picking up pyenv's python installation,
 try `poetry env remove --all` and then `poetry install` again.
 
-Typecheck and run local unit tests:
+## Compiling
 
-    ./check.sh
-    # or individually:
-    poetry run mypy .
-    poetry run pytest -vv
-
-Once you've finished your compiler, edit `src/__main__.py` to call your compiler in function `call_compiler`.
-Then you can run your compiler on a source code file like this:
+The language specification for the compiler's language can be found [here](https://hy-compilers.github.io/spring-2025/language-spec/).
+The compiler can be run by:
 
     ./compiler.sh compile path/to/source/code --output=path/to/output/file
 
-You can send the finished compiler to Test Gadget for evaluation with:
-
-    ./test-gadget.py submit
-
-See the course page for more information.
-
-## IDE setup
-
-Recommended VSCode extensions:
-
-- Python
-- Pylance
-- autopep8
+Binaries are only compiled for x86 Linux, other platforms are not supported (though WSL naturally works).
