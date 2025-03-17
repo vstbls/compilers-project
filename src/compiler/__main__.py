@@ -11,11 +11,10 @@ from compiler import tokenizer, parser, type_checker, ir_generator, builtins, as
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
     tokens = tokenizer.tokenize(source_code, input_file_name)
     ast = parser.parse(tokens)
-    type_checker.typecheck(ast)
-    ir = ir_generator.generate_ir(builtins.builtin_var_types.copy(), ast)
+    type_checker.typecheck_module(ast)
+    ir = ir_generator.generate_ir(ast)
     asm = asm_generator.generate_asm(ir)
 
-    output_file = 'compiled'
     return assembler.assemble_and_get_executable(asm)
 
 

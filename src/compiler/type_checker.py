@@ -137,6 +137,8 @@ def typecheck(node: ast.Expression, symtab: SymTab[Type]) -> Type:
                 return Unit()
             
             case ast.Return():
+                if not node.expr:
+                    return Unit()
                 return typecheck(node.expr, symtab)
 
         return Unit()

@@ -257,10 +257,10 @@ def def_to_ir(
                 return var_unit
             
             case ast.Return():
-                var_expr = None
+                var_return = None
                 if expr.expr:
-                    var_expr = visit(st, expr.expr, break_label, continue_label)
-                ins.append(ir.Return(loc, var_expr))
+                    var_return = visit(st, expr.expr, break_label, continue_label)
+                ins.append(ir.Return(loc, var_return))
                 
         return var_unit
 

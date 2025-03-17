@@ -1,7 +1,7 @@
 from compiler import tokenizer, parser, type_checker
 from compiler.types import *
 
-def check_string(s: str) -> Type: return type_checker.typecheck(parser.parse(tokenizer.tokenize(s)))
+def check_string(s: str) -> Type: return type_checker.typecheck_module(parser.parse(tokenizer.tokenize(s)))
 
 def assert_parse_fail(s: str) -> None:
     try:
