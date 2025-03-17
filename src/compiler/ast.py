@@ -1,5 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+from typing import Any
 from compiler.classes import Location, DummyLocation
 from compiler.types import Type, Unit, FnType
 
@@ -8,6 +9,19 @@ from compiler.types import Type, Unit, FnType
 class Node:
     location: Location = field(kw_only=True, default_factory=lambda: DummyLocation(), compare=False)
     type: Type = field(kw_only=True, default_factory=lambda: Unit(), compare=False)
+    
+    def __str__(self) -> str:
+        def format_value(v: Any) -> str:
+            if isinstance(v, list):
+                return f'[{", ".join(format_value(e) for e in v)}]'
+            else:
+                return str(v)
+        args = ', '.join(
+            format_value(getattr(self, field.name))
+            for field in fields(self)
+            if field.name != 'location'
+        )
+        return f'{type(self).__name__}(\n{args}\n)'
 
 @dataclass
 class Module(Node):

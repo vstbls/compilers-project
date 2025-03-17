@@ -255,6 +255,12 @@ def def_to_ir(
                     raise SyntaxError(f'{loc}: continue called outside of a loop')
                 ins.append(ir.Jump(loc, continue_label))
                 return var_unit
+            
+            case ast.Return():
+                var_expr = None
+                if expr.expr:
+                    var_expr = visit(st, expr.expr, break_label, continue_label)
+                ins.append(ir.Return(loc, var_expr))
                 
         return var_unit
 
@@ -264,11 +270,8 @@ def def_to_ir(
         
     if fun_def:
         ins.append(ir.Fun(root_node.location, fun_def.name, var_params))
-        var_final = visit(root_symtab, root_node)
-        if var_types[var_final] == Unit():
-            ins.append(ir.Return(root_node.location, None))
-        else:
-            ins.append(ir.Return(root_node.location, var_final))
+        visit(root_symtab, root_node)
+        ins.append(ir.Return(fun_def.location, None))
         return ins
 
     ins.append(ir.Fun(root_node.location, 'main', None))

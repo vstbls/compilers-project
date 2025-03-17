@@ -31,17 +31,14 @@ def typecheck_definition(definition: ast.Definition, symtab: SymTab[Type]) -> Ty
         symtab.set(definition.params[i].name, definition.type.params[i])
     
     for e in definition.block.exprs:
-        typecheck(e, symtab)
+        expr_type = typecheck(e, symtab)
+        if isinstance(e, ast.Return) and expr_type != definition.type.res:
+            raise TypeError(f'{e.location}: return type doesn\'t match function definition ({definition.type})')
 
     if definition.block.res:
-        res_type = typecheck(definition.block.res, symtab)
-    else:
-        res_type = Unit()
+        typecheck(definition.block.res, symtab)
 
-    if definition.type.res == res_type:
-        return res_type # Maybe makes more sense to return Unit or FnType, but tbh the return types aren't even used rn
-    else:
-        raise TypeError(f'{definition.location}: return type doesn\'t match function definition ({definition.type})')
+    return definition.type
 
 def typecheck(node: ast.Expression, symtab: SymTab[Type]) -> Type:
     def check_match(where: Location, expected: Type, got: Type) -> None:
@@ -138,6 +135,9 @@ def typecheck(node: ast.Expression, symtab: SymTab[Type]) -> Type:
                     raise TypeError(f'{node.location}: mismatch between declared type ({node.type}) and actual type ({t})')
                 symtab.define(node.id.name, t)
                 return Unit()
+            
+            case ast.Return():
+                return typecheck(node.expr, symtab)
 
         return Unit()
     
